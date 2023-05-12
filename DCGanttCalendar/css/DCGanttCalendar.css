@@ -1,0 +1,191 @@
+/* noscrollbars for contentContainer */
+.contentContainer::-webkit-scrollbar{
+    display: none;
+}
+.contentContainer::-webkit-scrollbar-track{
+    display: none;
+}
+.contentContainer::-webkit-scrollbar-thumb{
+    display: none;
+}
+.contentContainer::-webkit-scrollbar-thumb:hover{
+    display: none;
+}
+
+
+
+
+.tableContainer{ /* timeline table container*/
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.tableContainer table thead tr th {
+    text-align: center;
+}
+.scopeCenter::-webkit-scrollbar, .pageContainer::-webkit-scrollbar{
+    width: 0.5rem;
+    height: 0.5rem;
+    border: none;
+    background: transparent;
+    
+}
+.scopeCenter::-webkit-scrollbar-track, .pageContainer::-webkit-scrollbar-track{
+    background: transparent;
+    border: solid thin black;
+}
+.scopeCenter::-webkit-scrollbar-thumb, .pageContainer::-webkit-scrollbar-thumb{
+    resize: vertical !important;
+    background: #555;
+    border-radius: 1rem;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border: solid thin black;
+}
+.scopeCenter::-webkit-scrollbar-thumb:hover, .pageContainer::-webkit-scrollbar-thumb:hover{
+    background: #725e5e;
+    border: solid thin black
+}
+
+.contentContainer thead tr th{ /* timeline table */
+    border: solid thin black !important;
+    padding: 0 !important;
+    white-space: nowrap;
+    overflow-x: hidden;
+}
+
+
+
+#table-body-row td{
+    border-bottom: none !important;
+}
+#table-head-row th:first-child, #table-body-row td:first-child{
+    border-left: none !important;
+}
+
+.subjectsContainer{
+    position: sticky;
+    width: auto !important;
+}
+.subjectsContainer table{ /* subject table tr*/
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.subjectsContainer table tbody{
+    position: sticky;
+    left: 0;
+}
+.subjectsContainer table tbody tr{ /* subject table tr*/
+    border: solid thin black !important;
+    border-bottom: none !important;
+    /* width: 2rem !important; */
+    /*border-right: none !important; */
+}
+.subjectsContainer table tbody tr td{  /* subject table td*/
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    transform: translateY(-50%);
+    max-height: 30px;
+}
+.subjectsContainer table tbody th{
+    align-content: center;
+    padding: 0 !important;
+    z-index: 2;
+    max-height: 1rem;
+}
+.subjectsContainer table tbody td p{
+    margin: 0 !important;
+    position: sticky;
+    width: fit-content;
+    right: 0;
+}
+
+.contentContainer, .subjectsContainer{
+    padding: 0 !important;
+    margin: 0 !important;
+    height: 20rem;
+}
+.contentContainer{
+    flex-wrap: nowrap !important;
+    overflow-x: scroll;
+    height: calc(100% - 35px);
+}
+
+.pageContainer{
+    position: relative;
+    /* overflow-x: scroll !important; */
+    overflow-y: scroll !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: 20rem;
+    
+
+}
+.timelineScope{
+    position: sticky !important;
+    background: #6c757d;
+    left: 0;
+    right: 0;
+    bottom: 0 !important;
+    height: 35px;
+    border: solid thin black;
+    overflow: hidden;
+    z-index: 3;
+
+}
+.scopeCenter{
+    display: inline-flex;
+    position: absolute;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    height: inherit;
+    left: 6rem;
+    right: 6rem;
+    margin-top: -1px;
+    padding-top: 1px;
+}
+.scopeCenter div{
+    border-right: solid thin rgba(0, 0, 0, 0.40);
+    border-left: solid thin rgba(0, 0, 0, 0.40);
+    min-width: .5rem;
+}
+.scopeAssignment{
+    /* padding: 0 !important; */
+    position: absolute;
+    border: solid thin rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2;
+}
+.scopeLeft, .scopeRight{
+    display: block;
+    position: absolute;
+    height: inherit;
+    width: fit-content;
+}
+.scopeLeft{
+    left: 0;
+    
+}
+.scopeRight{
+    right: 0;
+    
+}
+.scopeLeft button, .scopeRight button{
+    height: inherit;
+    width: 2rem;
+    border-left: solid thin gray;
+}
+.scopeLeft button p{
+    font-weight: bold;
+    font-size: x-large;
+    transform: translate(5%, -30%);
+    margin-left: -0.45rem !important;
+}
+.scopeRight button p{
+    font-weight: bold;
+    font-size: x-large;
+    transform: translate(5%, -30%);
+    margin-left: -0.35rem !important;
+}
