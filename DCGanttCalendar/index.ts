@@ -190,6 +190,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
 
     // Value of the field is stored and used inside the control
 
+    private _errors: boolean;
+
     private _startDate: Date;
 
     private _endDate: Date;
@@ -263,6 +265,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
     public init(context: ComponentFramework.Context<IInputs>, notifyOutputChanged: () => void, state: ComponentFramework.Dictionary, container:HTMLDivElement): void
     {
         //set values from components context IInputs
+        this._errors = context.parameters.displayErrors.raw ?? true;
         this._startDate = context.parameters.startDate.raw ?? new Date(); //set _startDate value to context parameter startDate, if null default to new date
         this._endDate = context.parameters.endDate.raw ?? new Date((new Date()).getDate() + 1); //set _endDate value to context parameter endDate, if null default to new date
         this._dayWidth = context.parameters.dayWidth.raw ?? new Float64Array(); //set _dayWidth value to context parameter dayWidth, if null default to new number
@@ -351,18 +354,18 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         var scopeLeft = this._scope.appendChild(document.createElement("div")); scopeLeft.classList.add("scopeLeft");
 
         var scopeAlgL = scopeLeft.appendChild(document.createElement("button")); scopeAlgL.classList.add("navLeft", "btn", "btn-dark");
-        scopeAlgL.id = "AlgLeft";
-        var scopeAlgLText = scopeAlgL.appendChild(document.createElement("p")); scopeAlgLText.textContent = "|-";
+        scopeAlgL.id = "algLeft";
+        var scopeAlgLText = scopeAlgL.appendChild(document.createElement("p")); scopeAlgLText.textContent = "⟝";
         scopeAlgL.addEventListener("click", this.scopeFunc.align.start.bind(this));
 
         var scopeJmpL = scopeLeft.appendChild(document.createElement("button")); scopeJmpL.classList.add("navLeft", "btn", "btn-dark");
         scopeJmpL.id = "jmpLeft";
-        var scopeJmpLText = scopeJmpL.appendChild(document.createElement("p")); scopeJmpLText.textContent = "«";
+        var scopeJmpLText = scopeJmpL.appendChild(document.createElement("p")); scopeJmpLText.textContent = "⟪";
         scopeJmpL.addEventListener("click", this.scopeFunc.jump.left.bind(this));
 
         var scopeNavL = scopeLeft.appendChild(document.createElement("button")); scopeNavL.classList.add("navLeft", "btn", "btn-dark");
         scopeNavL.id = "navLeft";
-        var scopeNavLText = scopeNavL.appendChild(document.createElement("p")); scopeNavLText.textContent = "⊲";
+        var scopeNavLText = scopeNavL.appendChild(document.createElement("p")); scopeNavLText.textContent = "⟨";
         scopeNavL.addEventListener('click', this.scopeFunc.step.left.bind(this));
 
         //scope center /background
@@ -377,9 +380,19 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         var scopeRight = this._scope.appendChild(document.createElement("div")); scopeRight.classList.add("scopeRight");
 
         var scopeNavR = scopeRight.appendChild(document.createElement("button")); scopeNavR.classList.add("navRight", "btn", "btn-dark");
-        var scopeNavRText = scopeNavR.appendChild(document.createElement("p")); scopeNavRText.textContent = "⊳";
+        var scopeNavRText = scopeNavR.appendChild(document.createElement("p")); scopeNavRText.textContent = "⟩";
         scopeNavR.id = "navRight";
         scopeNavR.addEventListener('click', this.scopeFunc.step.right.bind(this));
+
+        var scopeJmpR = scopeRight.appendChild(document.createElement("button")); scopeJmpR.classList.add("navRight", "btn", "btn-dark");
+        scopeJmpR.id = "jmpRight";
+        var scopeJmpRText = scopeJmpR.appendChild(document.createElement("p")); scopeJmpRText.textContent = "⟫";
+        scopeJmpR.addEventListener("click", this.scopeFunc.jump.right.bind(this));
+
+        var scopeAlgR = scopeRight.appendChild(document.createElement("button")); scopeAlgR.classList.add("navRight", "btn", "btn-dark");
+        scopeAlgR.id = "algRight";
+        var scopeAlgRText = scopeAlgR.appendChild(document.createElement("p")); scopeAlgRText.textContent = "⟞";
+        scopeAlgR.addEventListener("click", this.scopeFunc.align.end.bind(this));
         
         //finish making assignments
         this._assignmentElements = createSubject.assignment(this._assignments);
@@ -421,12 +434,16 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 
                 var findToday = (target.querySelector("[title='"+ (new Date).toDateString() +"']"));
                 if(findToday != null){
+                    target.scrollLeft = 0;
                     findToday = findToday as HTMLTableCellElement;
                     var todayBound = findToday.getBoundingClientRect();
                     var targetBound = target.getBoundingClientRect();
-                    target.scrollLeft = todayBound.x - (todayBound.width / 2) - (targetBound.width / 2);
+                    target.scrollLeft = todayBound.x - (targetBound.width / 2);
+                }else{
+                    if (this._errors){
+                        window.alert("Couldn't find todays date in the calendar!\nPlease consult the administrator for your team.\nError Code: \"001001\"");
+                    }
                 }
-                
             }
         },
         jump: {
@@ -445,11 +462,14 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 var scopeCSub = target.appendChild(document.createElement("div").appendChild(document.createElement("table")));
                 var scopeCSubTB = scopeCSub.createTBody();
                 var subjectHeight = (this.scopeFunc.target.querySelector("[id='"+ subjects[1]+ "']") as HTMLTableRowElement).getBoundingClientRect().height;
-                var trHeight = scopeCSub.getBoundingClientRect().height / Math.floor(this.scopeFunc.target.getBoundingClientRect().height / subjectHeight);
+                var countHeight = Math.floor(Math.floor(target.getBoundingClientRect().height) / Math.floor(subjectHeight))
+                var trHeight = Math.floor(scopeCSub.getBoundingClientRect().height / countHeight);
                 for(let i = 0; i < subjects.length; i++){
                     var subj = subjects[i];
                     var scopeSubject = scopeCSubTB.insertRow();
-                    scopeSubject.style.minHeight = Math.floor(trHeight) +'px';
+                    scopeSubject.style.minHeight = trHeight +'px';
+                    scopeSubject.style.maxHeight = scopeCSub.getBoundingClientRect().height - 2 +'px';
+                    scopeSubject.style.height = trHeight +'px';
                     scopeSubject.classList.add("scopeSubject");
                     scopeSubject.id = "scope-" + subj;
                 }
@@ -484,7 +504,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         switch (event.button){
             case 0: sliderVars.state = false; break; //left mouse button
             case 1: this.scopeFunc.align.center(); break; //middle mouse buttone
-            case 2: this.scopeFunc.jump.right(); break; //right mouse button
+            case 2: this.scopeFunc.align.today(this.scopeFunc.target); break; //right mouse button
         }
     }
 

@@ -18,6 +18,7 @@
       -->
     </external-service-usage>
     <!-- property node identifies a specific, configurable piece of data that the control expects from CDS -->
+    <property name="displayErrors" display-name-key="display errors" description-key="display error codes" of-type="TwoOptions" usage="bound" required="true" />
     <property name="startDate" display-name-key="start date" description-key="start date for element" of-type="DateAndTime.DateOnly" usage="bound" required="true" />
     <property name="endDate" display-name-key="end date" description-key="end date for element" of-type="DateAndTime.DateOnly" usage="bound" required="true" />
     <property name="dayWidth" display-name-key="day width" description-key="individual day width" of-type="Decimal" usage="bound" required="true" />

@@ -2,6 +2,7 @@
 <manifest>
   <control namespace="GanttCalendar" constructor="DCGanttCalendar" version="2.0.1" display-name-key="DCGanttCalendar" description-key="DCGanttCalendar description" control-type="standard" api-version="1.3.5">
     <external-service-usage enabled="false"/>
+    <property name="displayErrors" display-name-key="display errors" description-key="display error codes" of-type="TwoOptions" usage="bound" required="true"/>
     <property name="startDate" display-name-key="start date" description-key="start date for element" of-type="DateAndTime.DateOnly" usage="bound" required="true"/>
     <property name="endDate" display-name-key="end date" description-key="end date for element" of-type="DateAndTime.DateOnly" usage="bound" required="true"/>
     <property name="dayWidth" display-name-key="day width" description-key="individual day width" of-type="Decimal" usage="bound" required="true"/>
