@@ -370,6 +370,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
 
         //scope center /background
         var scopeC = this._scope.appendChild(document.createElement("div")); scopeC.classList.add("scopeCenter");
+        scopeC.addEventListener("scroll", this.scopeFunc.scroll.bind(this));
+
 
         this.scopeFunc.setup.subjects(this._subjects, scopeC);
         this.scopeFunc.setup.dates(dates, scopeC);
@@ -401,7 +403,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         //bind function to check if Left Mouse Button was released, used to stop drag and other events
         document.addEventListener('mouseup', this.mouseButtonRelease.bind(this));
         
-        
+
+        //set scroll values for scope
         
     }
 
@@ -410,6 +413,14 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         target: document.body as HTMLElement,
         cellW: 0,
         state: false,
+        scroll: (event: any): void => {
+            var tarThumbW = this.scopeFunc.target.offsetWidth / this.scopeFunc.target.scrollWidth;
+            var evTarThumbW = event.target.offsetWidth / event.target.scrollWidth;
+            var tarPerc = (this.scopeFunc.target.scrollWidth - tarThumbW) / 100;
+            var evTarPerc = (event.target.scrollWidth - evTarThumbW) / 100;
+            console.log("values: " + evTarPerc + " " + event.target.scrollLeft + " " + tarPerc + " result: " + evTarPerc * (event.target.scrollLeft / tarPerc) +" ")
+            this.scopeFunc.target.scrollLeft = Math.floor(((this.scopeFunc.target.scrollWidth - this.scopeFunc.target.clientWidth) / 100) * (event.target.scrollLeft / ((event.target.scrollWidth - event.target.clientWidth) / 100)));
+        },
         step: {
             left: (): void => {
                 let cellWidth = (this._tableHead.firstChild?.firstChild as HTMLTableCellElement).offsetWidth;
