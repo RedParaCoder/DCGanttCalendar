@@ -230,6 +230,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
     //this is the table container for all the calendar related elements
     private _row: HTMLDivElement;
 
+    private _scopeC: HTMLDivElement;
+
     //collection of all the subjects from context IInput
     private _subjects: string[];
     //collection of all the assignments from context IInput
@@ -370,6 +372,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
 
         //scope center /background
         var scopeC = this._scope.appendChild(document.createElement("div")); scopeC.classList.add("scopeCenter");
+        this._scopeC = scopeC;
         scopeC.addEventListener("scroll", this.scopeFunc.scroll.bind(this));
 
 
@@ -403,11 +406,23 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         //bind function to check if Left Mouse Button was released, used to stop drag and other events
         document.addEventListener('mouseup', this.mouseButtonRelease.bind(this));
         
-
-        //set scroll values for scope
+        setTimeout((): void =>{ //makes calendar scroll to day and blink the day in the calendar
+            this.scopeFunc.align.today(this.scopeFunc.target);
+        }, 50);
         
     }
 
+    //blink effect for elements
+    private blink = async (target:any | HTMLElement) =>{
+        target = target as HTMLElement;
+        (target as HTMLElement).setAttribute("class", "today");
+        setTimeout(function(){
+            (target as HTMLElement).setAttribute("class", "today-blink");
+        }, 1);
+        setTimeout(function(){
+            (target as HTMLElement).setAttribute("class", _string.empty);
+        }, 2000)
+    }
     //custom functions for scope
     private scopeFunc = {
         target: document.body as HTMLElement,
@@ -443,13 +458,14 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             },
             today: (target: HTMLElement): void =>{
                 
-                var findToday = (target.querySelector("[title='"+ (new Date).toDateString() +"']"));
+                var findToday = (target.querySelector("td[title='"+ (new Date).toDateString() +"']"));
                 if(findToday != null){
                     target.scrollLeft = 0;
                     findToday = findToday as HTMLTableCellElement;
                     var todayBound = findToday.getBoundingClientRect();
                     var targetBound = target.getBoundingClientRect();
                     target.scrollLeft = todayBound.x - (targetBound.width / 2);
+                    this.blink(findToday);
                 }else{
                     if (this._errors){
                         window.alert("Couldn't find todays date in the calendar!\nPlease consult the administrator for your team.\nError Code: \"001001\"");
@@ -528,8 +544,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
      */
     public updateView(context: ComponentFramework.Context<IInputs>): void
     {       //console.log("updating view");
-
-
+        
+ 
 
         // Add code to update control view
         //set control container size to component's height and width
@@ -560,6 +576,12 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             this._tableBody.appendChild(tableTr); //append generated table row and cells to table body element
 
             createSubject.positioning(this._assignments, this._assignmentElements, true); //update assignments positioning
+
+            this._scopeC.innerHTML = _string.empty; //update scope view
+            this.scopeFunc.setup.subjects(this._subjects, this._scopeC);
+            this.scopeFunc.setup.dates(dates, this._scopeC);
+            this.scopeFunc.setup.assignments(this._assignments, this._scopeC);
+
             
         }
 
@@ -579,6 +601,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             }
             createSubject.positioning(this._assignments, this._assignmentElements, true); //update assignments positioning
         }
+        
         
     }
 

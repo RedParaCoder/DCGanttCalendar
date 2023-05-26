@@ -23,6 +23,16 @@
 .tableContainer table thead tr th {
     text-align: center;
 }
+/* .tableContainer table tbody tr td{
+} */
+.today{
+    background-color: red;
+}
+.today-blink {
+    transition: background-color 2s ease-out;
+    background-color: transparent;
+    
+}
 .scopeCenter::-webkit-scrollbar, .pageContainer::-webkit-scrollbar{
     width: 0.5rem;
     height: 0.5rem;
