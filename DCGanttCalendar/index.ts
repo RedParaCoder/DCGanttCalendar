@@ -2,10 +2,11 @@ import 'jquery';
 import 'popper.js';
 import 'bootstrap';
 import {IInputs, IOutputs} from "./generated/ManifestTypes";
-import { DOMElement, ElementType, createElement } from 'react';
+import { DOMElement, ElementType, WheelEvent, WheelEventHandler, createElement } from 'react';
 import { Interface } from 'readline';
 import { cssNumber } from 'jquery';
 import { devNull } from 'os';
+import { eventNames } from 'process';
 
 //custom functions that can be deleted if not used!
 
@@ -432,9 +433,12 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         state: false,
         scroll: {
             x: (event: any): void => {
+                console.log(event)
                 this.scopeFunc.highlight.target.style.left = ((this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth) / 100) * (this.scopeFunc.target.scrollLeft / ((this.scopeFunc.target.scrollWidth - this.scopeFunc.target.clientWidth) / 100)) + 'px';
-                if(this.scopeFunc.highlight.target.offsetLeft < (this._scopeC.scrollWidth - this._scopeC.offsetWidth)){
-                    this._scopeC.scrollLeft = this.scopeFunc.highlight.target.offsetLeft
+                if(this.scopeFunc.highlight.target.offsetLeft < this._scopeC.scrollLeft){
+                    this._scopeC.scrollLeft = this.scopeFunc.highlight.target.offsetLeft -1
+                }else if((this.scopeFunc.highlight.target.offsetLeft + this.scopeFunc.highlight.target.offsetWidth) > (this._scopeC.scrollLeft + this._scopeC.offsetWidth)){
+                    this._scopeC.scrollLeft = ((this.scopeFunc.highlight.target.offsetLeft + this.scopeFunc.highlight.target.clientWidth + 2) - this._scopeC.offsetWidth);
                 }
             },
             y: (event: any): void => {
@@ -530,7 +534,9 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 scroll: -1,
             },
             start: (event: MouseEvent): void => {
+                event.preventDefault();
                 console.log(self)
+                this.scopeFunc.target.removeEventListener("scroll", this.scopeFunc.scroll.x)
                 this.scopeFunc.highlight.params.offset = this.scopeFunc.highlight.target.offsetLeft - event.pageX;
                 this.scopeFunc.highlight.params.scroll = this._scopeC.scrollLeft;
                 document.addEventListener("mousemove", this.scopeFunc.highlight.move)
@@ -543,10 +549,10 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                     this.scopeFunc.target.scrollLeft = toMove * (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth) / (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth);
                 }
                 this.scopeFunc.target.scrollLeft = toMove * (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth) / (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth);
-                console.log(toMove);
             },
             end: (ev: any): void => {
                 document.removeEventListener("mousemove", this.scopeFunc.highlight.move)
+                this.scopeFunc.target.addEventListener("scroll", this.scopeFunc.scroll.x)
             },
             reverseAlign: (): void => {
                 this.scopeFunc.highlight.target.style.left = this._scopeC.scrollLeft * (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth) / (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth) + 'px';
@@ -606,7 +612,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 highligh.classList.add("highlight");
                 highligh.style.display = "block";
                 highligh.style.width = totalW + 'px';
-                highligh.style.height = "500%";
+                highligh.style.height = "100%";
                 highligh.style.position = "absolute";
                 highligh.style.borderLeft = "solid thin red";
                 highligh.style.borderRight = "solid thin red";
@@ -618,7 +624,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 this.scopeFunc.highlight.target = highligh;
                 highligh.addEventListener("mousedown", this.scopeFunc.highlight.start.bind(this));
 
-                this.scopeFunc.target.addEventListener("scroll", this.scopeFunc.scroll.x.bind(this))
+                //this.scopeFunc.target.addEventListener("wheel", (event) => { var newEV = event as WheelEvent<T = this.scopeFunc.target>; newEVthis.scopeFunc.scroll.x});
+                this.scopeFunc.target.addEventListener("wheel", this.scopeFunc.scroll.x);
             }
 
         }
