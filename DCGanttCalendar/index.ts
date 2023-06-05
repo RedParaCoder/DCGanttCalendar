@@ -5,6 +5,7 @@ import {IInputs, IOutputs} from "./generated/ManifestTypes";
 import { DOMElement, ElementType, createElement } from 'react';
 import { Interface } from 'readline';
 import { cssNumber } from 'jquery';
+import { devNull } from 'os';
 
 //custom functions that can be deleted if not used!
 
@@ -373,12 +374,12 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         //scope center /background
         var scopeC = this._scope.appendChild(document.createElement("div")); scopeC.classList.add("scopeCenter");
         this._scopeC = scopeC;
-        scopeC.addEventListener("scroll", this.scopeFunc.scroll.bind(this));
 
 
         this.scopeFunc.setup.subjects(this._subjects, scopeC);
         this.scopeFunc.setup.dates(dates, scopeC);
         this.scopeFunc.setup.assignments(this._assignments, scopeC);
+        this.scopeFunc.setup.highlight(scopeC);
         console.log("days count = " + dates.length);
         
         //scope navigate right
@@ -414,13 +415,14 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
 
     //blink effect for elements
     private blink = async (target:any | HTMLElement) =>{
+        //window.alert("blinking");
         target = target as HTMLElement;
         (target as HTMLElement).setAttribute("class", "today");
         setTimeout(function(){
             (target as HTMLElement).setAttribute("class", "today-blink");
-        }, 1);
+        }, 150);
         setTimeout(function(){
-            (target as HTMLElement).setAttribute("class", _string.empty);
+            (target as HTMLElement).removeAttribute("class");
         }, 2000)
     }
     //custom functions for scope
@@ -428,13 +430,16 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         target: document.body as HTMLElement,
         cellW: 0,
         state: false,
-        scroll: (event: any): void => {
-            var tarThumbW = this.scopeFunc.target.offsetWidth / this.scopeFunc.target.scrollWidth;
-            var evTarThumbW = event.target.offsetWidth / event.target.scrollWidth;
-            var tarPerc = (this.scopeFunc.target.scrollWidth - tarThumbW) / 100;
-            var evTarPerc = (event.target.scrollWidth - evTarThumbW) / 100;
-            console.log("values: " + evTarPerc + " " + event.target.scrollLeft + " " + tarPerc + " result: " + evTarPerc * (event.target.scrollLeft / tarPerc) +" ")
-            this.scopeFunc.target.scrollLeft = Math.floor(((this.scopeFunc.target.scrollWidth - this.scopeFunc.target.clientWidth) / 100) * (event.target.scrollLeft / ((event.target.scrollWidth - event.target.clientWidth) / 100)));
+        scroll: {
+            x: (event: any): void => {
+                this.scopeFunc.highlight.target.style.left = ((this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth) / 100) * (this.scopeFunc.target.scrollLeft / ((this.scopeFunc.target.scrollWidth - this.scopeFunc.target.clientWidth) / 100)) + 'px';
+                if(this.scopeFunc.highlight.target.offsetLeft < (this._scopeC.scrollWidth - this._scopeC.offsetWidth)){
+                    this._scopeC.scrollLeft = this.scopeFunc.highlight.target.offsetLeft
+                }
+            },
+            y: (event: any): void => {
+
+            }
         },
         step: {
             left: (): void => {
@@ -444,6 +449,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             right: (): void => {
                 let cellWidth = (this._tableHead.firstChild?.firstChild as HTMLTableCellElement).offsetWidth;
                 this.scopeFunc.target.scrollLeft = this.scopeFunc.target.scrollLeft + cellWidth;
+
             }
         },
         align: {
@@ -471,7 +477,40 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                         window.alert("Couldn't find todays date in the calendar!\nPlease consult the administrator for your team.\nError Code: \"001001\"");
                     }
                 }
-            }
+            },
+            specific: (target: HTMLElement, date: string): void => {
+                var findDay = (target.querySelector("td[title='"+ date +"']"));
+                if(findDay != null){
+                    var dayAttr = findDay.getAttribute("clickVariant");
+                    if (dayAttr != null){
+                        if(dayAttr == "one"){
+                            findDay.setAttribute("clickVariant", "two");
+                            target.scrollLeft = 0;
+                            findDay = findDay as HTMLTableCellElement;
+                            var todayBound = findDay.getBoundingClientRect();
+                            var targetBound = target.getBoundingClientRect();
+                            target.scrollLeft = todayBound.x - (targetBound.width / 2);
+                            this.blink(findDay);
+                        }
+                        (async function(target: HTMLElement){
+                            setTimeout(function(){
+                            target.removeAttribute("clickVariant");
+                            },250);
+                        })(findDay as HTMLElement);
+                    }else{
+                        findDay.setAttribute("clickVariant", "one");
+                        (async function(target: HTMLElement){
+                            setTimeout(function(){
+                                target.removeAttribute("clickVariant")
+                            }, 250)
+                        })(findDay as HTMLElement)
+                    }
+                }else{
+                    if (this._errors){
+                        window.alert("Couldn't find that date in the calendar!\nPlease consult the administrator for your team.\nError Code: \"001002\"");
+                    }
+                }
+            },
         },
         jump: {
             right: (): void => {
@@ -483,6 +522,35 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 var jumpTimes = Math.floor(this.scopeFunc.target.offsetWidth / this.scopeFunc.cellW);
                 this.scopeFunc.target.scrollLeft = this.scopeFunc.target.scrollLeft - (this.scopeFunc.cellW * jumpTimes);
             }
+        },
+        highlight: {
+            target: HTMLParagraphElement.prototype,
+            params: {
+                offset: -1,
+                scroll: -1,
+            },
+            start: (event: MouseEvent): void => {
+                console.log(self)
+                this.scopeFunc.highlight.params.offset = this.scopeFunc.highlight.target.offsetLeft - event.pageX;
+                this.scopeFunc.highlight.params.scroll = this._scopeC.scrollLeft;
+                document.addEventListener("mousemove", this.scopeFunc.highlight.move)
+                document.addEventListener("mouseup", this.scopeFunc.highlight.end)
+            },
+            move: (event:MouseEvent): void => {
+                var toMove = (this.scopeFunc.highlight.params.offset + event.pageX) - (this.scopeFunc.highlight.params.scroll - this._scopeC.scrollLeft);
+                if ((toMove > 0) && toMove  < this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth){
+                    this.scopeFunc.highlight.target.style.left = toMove +'px';
+                    this.scopeFunc.target.scrollLeft = toMove * (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth) / (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth);
+                }
+                this.scopeFunc.target.scrollLeft = toMove * (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth) / (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth);
+                console.log(toMove);
+            },
+            end: (ev: any): void => {
+                document.removeEventListener("mousemove", this.scopeFunc.highlight.move)
+            },
+            reverseAlign: (): void => {
+                this.scopeFunc.highlight.target.style.left = this._scopeC.scrollLeft * (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth) / (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth) + 'px';
+            },
         },
         setup: {
             subjects: (subjects: string[], target: HTMLElement): void =>{
@@ -502,11 +570,17 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 }
             },
             dates: (dates: Date[], target: HTMLElement): void =>{
+                var firstCell = document.body as HTMLElement;
                 for(let i = 0; i < dates.length; i++){
                     let disDate = dates[i] as Date;
                     var dai = target.appendChild(document.createElement("div"));
                     dai.setAttribute("scopedate", disDate.toDateString());
+                    dai.addEventListener("click", this.scopeFunc.align.specific.bind(this, this.scopeFunc.target, disDate.toDateString()))
+                    if (firstCell == document.body){
+                        firstCell = dai;
+                    }
                 }
+                target.style.paddingLeft = (firstCell.offsetWidth * (this._subjectTable.offsetWidth / this.scopeFunc.cellW)) + 'px';
             },
             assignments: (assignments: assignmentType[], target: HTMLElement): void =>{
                 for(let i = 0; i < assignments.length; i++){
@@ -520,8 +594,31 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                     assignCell.style.marginLeft = Math.floor(sElm.x - slElmX -1) +"px";
                     assignCell.classList.add("scopeAssignment");
                     assignCell.setAttribute("assignment-title", assign.title);
+                    assignCell.addEventListener("click", this.scopeFunc.align.specific.bind(this, this.scopeFunc.target, assign.start.toDateString()))
         
                 }
+            },
+            highlight: (scopeC: HTMLDivElement): void => {
+                var onceCell = (scopeC.querySelector("div") as HTMLDivElement).getBoundingClientRect().width;
+                var highligh = scopeC.appendChild(document.createElement("p"));
+                var totalView = (this.scopeFunc.target.offsetWidth / this.scopeFunc.cellW);
+                var totalW = Math.floor(onceCell * totalView);
+                highligh.classList.add("highlight");
+                highligh.style.display = "block";
+                highligh.style.width = totalW + 'px';
+                highligh.style.height = "500%";
+                highligh.style.position = "absolute";
+                highligh.style.borderLeft = "solid thin red";
+                highligh.style.borderRight = "solid thin red";
+                highligh.style.zIndex = "5";
+                highligh.style.background = "rgb(255 0 0 / 15%)";
+                highligh.style.cursor = "move";
+                highligh.setAttribute("draggable", "false")
+                highligh.setAttribute("onmousedown", "event.preventDefault ? event.preventDefault() : event.returnValue = false")
+                this.scopeFunc.highlight.target = highligh;
+                highligh.addEventListener("mousedown", this.scopeFunc.highlight.start.bind(this));
+
+                this.scopeFunc.target.addEventListener("scroll", this.scopeFunc.scroll.x.bind(this))
             }
 
         }
@@ -581,6 +678,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             this.scopeFunc.setup.subjects(this._subjects, this._scopeC);
             this.scopeFunc.setup.dates(dates, this._scopeC);
             this.scopeFunc.setup.assignments(this._assignments, this._scopeC);
+            this.scopeFunc.setup.highlight(this._scopeC)
 
             
         }
