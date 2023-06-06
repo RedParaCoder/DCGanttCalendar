@@ -490,10 +490,10 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                         if(dayAttr == "one"){
                             findDay.setAttribute("clickVariant", "two");
                             target.scrollLeft = 0;
-                            findDay = findDay as HTMLTableCellElement;
-                            var todayBound = findDay.getBoundingClientRect();
-                            var targetBound = target.getBoundingClientRect();
-                            target.scrollLeft = todayBound.x - (targetBound.width / 2);
+                            findDay = findDay as HTMLElement;
+                            var todayBound = findDay.getBoundingClientRect()
+                            var targetBound = target.clientWidth;
+                            target.scrollLeft = todayBound.x + (todayBound.width / 2) - this._scopeC.offsetWidth;
                             this.blink(findDay);
                         }
                         (async function(target: HTMLElement){
@@ -625,7 +625,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 highligh.addEventListener("mousedown", this.scopeFunc.highlight.start.bind(this));
 
                 //this.scopeFunc.target.addEventListener("wheel", (event) => { var newEV = event as WheelEvent<T = this.scopeFunc.target>; newEVthis.scopeFunc.scroll.x});
-                this.scopeFunc.target.addEventListener("wheel", this.scopeFunc.scroll.x);
+                this.scopeFunc.target.addEventListener("scroll", this.scopeFunc.scroll.x);
             }
 
         }
