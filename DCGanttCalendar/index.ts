@@ -53,17 +53,6 @@ var _string = { //custom string creater that can return an empty string, random 
     },
 };
 
-var dayWidthValue = {
-    min: 6.0,
-    check: function(width:Float64Array | number){
-        var val;
-        if (+width > +this.min){
-            val = +width;
-        }else{val = this.min;}
-        return val;
-    }
-
-};
 
 
 
@@ -87,7 +76,8 @@ function createTableRowData(remSize:Float64Array | number, ddates:Date[], header
                 dDay.setAttribute("data-toggle", "tooltip");
                 dDay.setAttribute("data-placement", "bottom");
                 dDay.setAttribute("title", ddates[i].toDateString());
-                dDay.setAttribute("style", "min-width: " + remSize + "rem; max-width: " + remSize + "rem; height: 1rem"); //set width of cell 
+                dDay.setAttribute("class", "calendarDate")
+                //dDay.setAttribute("style", "min-width: " + remSize + "rem; width: " + remSize + "rem; height: 1rem"); //set width of cell 
                 dDay.outerHTML = "<th" + dDay.outerHTML.toString().slice(3, -3) + "th>"; //illegal move to change element type 💀
             }
         }
@@ -305,7 +295,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         //create table body element for new table
         var _tableBody = this._table.createTBody();
         //creating variable to be set/used on table cell width/height
-        var dayWidthToUse = dayWidthValue.check(+this._dayWidth);
+        var dayWidthToUse = this._dayWidth;
         var dayHeightToUse = +(this._subjects.length * 2);
         this._dayHeight = +dayHeightToUse;
         //creating table for subjects
@@ -318,7 +308,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         
 
 
-        var tableHtr = _tableHead.appendChild(createTableRowData(dayWidthToUse, dates, true));
+        var tableHtr = _tableHead.appendChild(createTableRowData((this._dayWidth as number), dates, true));
         tableHtr.setAttribute("id", "table-head-row");
 
         var tableBtr = _tableBody.appendChild(createTableRowData(+this._dayHeight, dates, false));
@@ -327,7 +317,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         //this._value = context.parameters.startDate.raw + _string.empty; //random calculation for testing purposes
 
         //this._container.innerText = this._value;
-        this._container.classList.add("bg-secondary", "text-light", "container-fluid", "pageContainer"); //add bootstrap classes to element
+        this._container.classList.add("bg-secondary", "text-light", "pageContainer"); //add bootstrap classes to element
         this._container.id = "pageContainer";
         this._timeContent = this._container.appendChild(document.createElement("div"));
         this._timeContent.classList.add("contentContainer", "row");
@@ -430,6 +420,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
     private scopeFunc = {
         target: document.body as HTMLElement,
         cellW: 0,
+        cCellW: 0,
         state: false,
         scroll: {
             x: (event: any): void => {
@@ -492,8 +483,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                             target.scrollLeft = 0;
                             findDay = findDay as HTMLElement;
                             var todayBound = findDay.getBoundingClientRect()
-                            var targetBound = target.clientWidth;
-                            target.scrollLeft = todayBound.x + (todayBound.width / 2) - this._scopeC.offsetWidth;
+                            target.scrollLeft = todayBound.x - (todayBound.width / 2) - this._scopeC.offsetWidth;
                             this.blink(findDay);
                         }
                         (async function(target: HTMLElement){
@@ -529,18 +519,73 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         },
         highlight: {
             target: HTMLParagraphElement.prototype,
+            expand: {
+                left:{
+                    target: HTMLParagraphElement.prototype,
+                    start: (event: MouseEvent): void => {
+                        this.scopeFunc.highlight.target.removeEventListener("mousedown", this.scopeFunc.highlight.start);
+                        this.scopeFunc.target.removeEventListener("scroll", this.scopeFunc.scroll.x)
+                        //this.scopeFunc.target.removeEventListener("scroll")
+                        this.scopeFunc.highlight.params.offset = this.scopeFunc.highlight.expand.left.target.offsetLeft - event.pageX;
+                        this.scopeFunc.highlight.params.scroll = this._scopeC.scrollLeft;
+                        this.scopeFunc.highlight.params.elmX = this.scopeFunc.highlight.target.offsetLeft;
+                        this.scopeFunc.highlight.params.elmW = this.scopeFunc.highlight.target.offsetWidth;
+
+                        document.addEventListener("mousemove", this.scopeFunc.highlight.expand.left.move)
+                        document.addEventListener("mouseup", this.scopeFunc.highlight.expand.left.end)
+                    },
+                    move: (event: MouseEvent): void => {
+                        var toExpand = this.scopeFunc.highlight.params.offset + event.pageX;
+                        console.log("to expand: "+toExpand)
+                        this.scopeFunc.highlight.target.style.left = this.scopeFunc.highlight.params.elmX - toExpand*-1 + 'px';
+                        this.scopeFunc.highlight.target.style.width = this.scopeFunc.highlight.params.elmW + toExpand*-1 + 'px';
+
+                        var newCellW = (this.scopeFunc.target.offsetWidth + this._subjectTable.offsetWidth) * ((this.scopeFunc.cCellW + 2) / this.scopeFunc.highlight.target.clientWidth);
+                        document.documentElement.style.setProperty('--cellW', newCellW.toString() + "px", "important");
+                        this.scopeFunc.target.scrollLeft = this.scopeFunc.highlight.target.offsetLeft + event.pageX;
+                        // document.body.querySelectorAll("[class='calendarDate']").forEach(function(ele){
+                        //     ele.setAttribute("style", "min-width: "+ newCellW + toExpand*-1 +"px; width: "+ newCellW + toExpand*-1 +"; max-width: "+ newCellW + toExpand*-1 +"px; height: 1rem;");
+                            
+                        // });
+                        createSubject.positioning(this._assignments, this._assignmentElements, true);
+                    },
+                    end: (event: MouseEvent): void => {
+                        this.scopeFunc.target.addEventListener("scroll", this.scopeFunc.scroll.x)
+                        this.scopeFunc.highlight.target.addEventListener("mousedown", this.scopeFunc.highlight.start);
+                        document.removeEventListener("mousemove", this.scopeFunc.highlight.expand.left.move)
+                        document.removeEventListener("mouseup", this.scopeFunc.highlight.expand.left.end)
+                    }
+                },
+                right:{
+                    target: HTMLParagraphElement.prototype,
+                    start: (): void => {
+
+                    },
+                    move: (): void => {
+
+                    },
+                    end: (): void => {
+
+                    }
+                },
+            },
+            
             params: {
                 offset: -1,
                 scroll: -1,
+                elmX: -1,
+                elmW: -1,
             },
             start: (event: MouseEvent): void => {
                 event.preventDefault();
-                console.log(self)
-                this.scopeFunc.target.removeEventListener("scroll", this.scopeFunc.scroll.x)
-                this.scopeFunc.highlight.params.offset = this.scopeFunc.highlight.target.offsetLeft - event.pageX;
-                this.scopeFunc.highlight.params.scroll = this._scopeC.scrollLeft;
-                document.addEventListener("mousemove", this.scopeFunc.highlight.move)
-                document.addEventListener("mouseup", this.scopeFunc.highlight.end)
+                console.log(event.target)
+                if(event.target == this.scopeFunc.highlight.target){
+                    this.scopeFunc.target.removeEventListener("scroll", this.scopeFunc.scroll.x)
+                    this.scopeFunc.highlight.params.offset = this.scopeFunc.highlight.target.offsetLeft - event.pageX;
+                    this.scopeFunc.highlight.params.scroll = this._scopeC.scrollLeft;
+                    document.addEventListener("mousemove", this.scopeFunc.highlight.move)
+                    document.addEventListener("mouseup", this.scopeFunc.highlight.end)
+                }
             },
             move: (event:MouseEvent): void => {
                 var toMove = (this.scopeFunc.highlight.params.offset + event.pageX) - (this.scopeFunc.highlight.params.scroll - this._scopeC.scrollLeft);
@@ -554,7 +599,10 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 document.removeEventListener("mousemove", this.scopeFunc.highlight.move)
                 this.scopeFunc.target.addEventListener("scroll", this.scopeFunc.scroll.x)
             },
-            reverseAlign: (): void => {
+            expandRight: (): void => {},
+            expandLeft: (): void => {},
+            resize: (): void => {},
+            reverseAlign: (): void => { //depricated
                 this.scopeFunc.highlight.target.style.left = this._scopeC.scrollLeft * (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth) / (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth) + 'px';
             },
         },
@@ -584,6 +632,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                     dai.addEventListener("click", this.scopeFunc.align.specific.bind(this, this.scopeFunc.target, disDate.toDateString()))
                     if (firstCell == document.body){
                         firstCell = dai;
+                        this.scopeFunc.cCellW = firstCell.offsetWidth;
                     }
                 }
                 target.style.paddingLeft = (firstCell.offsetWidth * (this._subjectTable.offsetWidth / this.scopeFunc.cellW)) + 'px';
@@ -622,7 +671,23 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 highligh.setAttribute("draggable", "false")
                 highligh.setAttribute("onmousedown", "event.preventDefault ? event.preventDefault() : event.returnValue = false")
                 this.scopeFunc.highlight.target = highligh;
-                highligh.addEventListener("mousedown", this.scopeFunc.highlight.start.bind(this));
+                highligh.addEventListener("mousedown", this.scopeFunc.highlight.start);
+
+
+                var expLeft = highligh.appendChild(document.createElement("p"));
+                expLeft.classList.add("expL");
+                expLeft.style.display = "block";
+                expLeft.style.borderLeft = "solid thin transparent";
+                expLeft.style.borderRight = "solid thin transparent";
+                expLeft.style.zIndex = "5";
+                expLeft.style.height = "100%";
+                expLeft.style.marginLeft = "-1px";
+                expLeft.style.width = "2px";
+                expLeft.style.left = "0px";
+                expLeft.style.cursor = "ew-resize";
+                expLeft.style.zIndex = "5"
+                this.scopeFunc.highlight.expand.left.target = expLeft;
+                expLeft.addEventListener("mousedown", this.scopeFunc.highlight.expand.left.start)
 
                 //this.scopeFunc.target.addEventListener("wheel", (event) => { var newEV = event as WheelEvent<T = this.scopeFunc.target>; newEVthis.scopeFunc.scroll.x});
                 this.scopeFunc.target.addEventListener("scroll", this.scopeFunc.scroll.x);
@@ -693,15 +758,15 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         //console.log(this._dayWidth + " : " + this._dayWidthControl);
         //check if dayWidth has been changedWidth has been changed by checking if dayWidth is not equal to the dayWidthControl variable
         var dayWidthControl = context.parameters.dayWidth.raw as number;
-        if(dayWidthControl.toString.length > 0  && this._dayWidth != dayWidthControl && +dayWidthControl > dayWidthValue.min){ //check if the _dayWidth is changed and valid
+        if(dayWidthControl.toString.length > 0  && this._dayWidth != dayWidthControl){ //check if the _dayWidth is changed and valid
             //console.log("editing now... Changing '" + dayWidthControl + "' to '" + this._dayWidth + "'."); //console logging for debug purposes
             this._dayWidth = dayWidthControl;
             let table = document.getElementById("table-head-row") as HTMLTableRowElement; //define a variable to table row that has the id "table-head-row", and specify type as compatible html dom type
             let tableChildren = Array.prototype.slice.call( table.children ); //define variable as array where the children from variable table is sliced into an array
-            var dayWidthToUse = dayWidthValue.check(+this._dayWidth); //define variable as float to be used in styling for table row cell in table head element
+            var dayWidthToUse = this._dayWidth; //define variable as float to be used in styling for table row cell in table head element
             this._dayWidth = dayWidthToUse; //change stored value of _datWidth to new value
             for(const child of tableChildren){ //define variable to be changed for each element inside tableChildren
-                child.setAttribute("style", "min-width: " + dayWidthToUse + "rem !important; max-width: " + dayWidthToUse + "rem !important"); //set new style for defined element
+                child.setAttribute("style", "width: " + dayWidthToUse + "rem"); //set new style for defined element
                 //console.log(child);
             }
             createSubject.positioning(this._assignments, this._assignmentElements, true); //update assignments positioning

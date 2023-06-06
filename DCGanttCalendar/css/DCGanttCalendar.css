@@ -1,3 +1,15 @@
+:root{
+    --cellW: 150px;
+}
+.calendarDate{
+    box-sizing: content-box;
+    max-width: var(--cellW) !important;
+    min-width: var(--cellW) !important;
+    height: 1rem;
+}
+.calendarDate *{
+    box-sizing: content-box;
+}
 /* noscrollbars for contentContainer */
 .contentContainer::-webkit-scrollbar{
     display: none;
@@ -14,7 +26,9 @@
 
 
 
-
+.tableContainer, .tableContainer * {
+    box-sizing: content-box;
+}
 .tableContainer{ /* timeline table container*/
     overflow: visible !important;
     padding: 0 !important;
@@ -23,8 +37,9 @@
 .tableContainer table thead tr th {
     text-align: center;
 }
-/* .tableContainer table tbody tr td{
-} */
+.tableContainer table tbody tr td{
+    box-sizing: content-box;
+}
 .today{
     background-color: red;
 }
@@ -123,6 +138,7 @@
     overflow-x: scroll;
     height: calc(100% - 35px);
 }
+.contentContainer 
 
 .pageContainer{
     position: relative;
