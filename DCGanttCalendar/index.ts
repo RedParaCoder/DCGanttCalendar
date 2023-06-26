@@ -656,6 +656,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 var onceCell = (scopeC.querySelector("div") as HTMLDivElement).getBoundingClientRect().width;
                 var highligh = scopeC.appendChild(document.createElement("p"));
                 var totalView = (this.scopeFunc.target.offsetWidth / this.scopeFunc.cellW);
+                console.log("TotalView = " + this.scopeFunc.target.offsetWidth + " / " + this.scopeFunc.cellW + " = " + totalView)
                 var totalW = Math.floor(onceCell * totalView);
                 highligh.classList.add("highlight");
                 highligh.style.display = "block";

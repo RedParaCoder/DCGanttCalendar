@@ -120,6 +120,7 @@
     padding: 0 !important;
     z-index: 2;
     max-height: 1rem;
+    display: none !important;
 }
 .subjectsContainer table tbody td p{
     margin: 0 !important;
@@ -127,7 +128,36 @@
     width: fit-content;
     right: 0;
 }
+.subjPreview { /* Subjects Preview */
+    position: absolute;
+    margin: 0 !important;
 
+}
+.subjPreview table {
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.subjPreview table tbody {
+    position: sticky;
+    left: 0;
+}
+.subjPreview table tbody tr{ /* subject preview table tr*/
+    border: solid thin black !important;
+    border-bottom: none !important;
+}
+.subjPreview table tbody th {
+    align-content: center;
+    padding: 0 !important;
+    z-index: 2;
+    max-height: 1rem;
+}
+.subjPreview table tbody td p{
+    margin: 0 !important;
+    position: sticky;
+    width: fit-content;
+    right: 0;
+}
 .contentContainer, .subjectsContainer{
     padding: 0 !important;
     margin: 0 !important;
