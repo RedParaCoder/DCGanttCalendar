@@ -203,6 +203,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
     // This element contains all elements of our custom control example
     private _container: HTMLDivElement;
 
+    private _timelineContainer: HTMLDivElement;
+
     private _timeContent: HTMLDivElement;
 
     private _SubjPreview: HTMLDivElement;
@@ -291,7 +293,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         // Add control initialization code
         
         //create div with class row used in bootstrap
-        this._row = document.createElement("div"); this._row.classList.add("tableContainer", "row", "col-md-11");
+        this._row = document.createElement("div"); this._row.classList.add("tableContainer", "row");
         //create new table for row div element
         this._table = document.createElement("table");
         this._table.classList.add("table-dark"); //add bootstrap class to table element
@@ -304,7 +306,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         var dayHeightToUse = +(this._subjects.length * 2);
         this._dayHeight = +dayHeightToUse;
         //creating table for subjects
-        var subjectsContainer = document.createElement("div"); subjectsContainer.id = "SubjectsContainer"; subjectsContainer.classList.add("col-md-1", "subjectsContainer");
+        var subjectsContainer = document.createElement("div"); subjectsContainer.id = "SubjectsContainer"; subjectsContainer.classList.add("subjectsContainer");
         this._subjectTable = subjectsContainer.appendChild(document.createElement("table"));
         this._subjectTable.classList.add("table-dark");
         this._subjectBody = this._subjectTable.createTBody();
@@ -320,11 +322,14 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         tableBtr.setAttribute("id", "table-body-row"); 
 
         //this._value = context.parameters.startDate.raw + _string.empty; //random calculation for testing purposes
+        //timeline ui elements container
+        this._timelineContainer = this._container.appendChild(document.createElement("div"));
+        this._timelineContainer.id = "timelineContainer"; this._timelineContainer.classList.add("timelineContainer");
 
         //this._container.innerText = this._value;
         this._container.classList.add("bg-secondary", "text-light", "pageContainer"); //add bootstrap classes to element
         this._container.id = "pageContainer";
-        this._timeContent = this._container.appendChild(document.createElement("div"));
+        this._timeContent = this._timelineContainer.appendChild(document.createElement("div"));
         this._timeContent.classList.add("contentContainer", "row");
 
 
@@ -337,12 +342,14 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
 
         //subjects preview section
         this._SubjPreview = document.createElement("div");
-        this._container.prepend(this._SubjPreview);
+        var previewToggle = this._SubjPreview.appendChild(document.createElement("div")); previewToggle.classList.add("sPreviewToggle")
+        this.subjPreviewFunc.visToggle.target = this._SubjPreview;
+        previewToggle.addEventListener("click", this.subjPreviewFunc.visToggle.toggle)
+        this._timelineContainer.prepend(this._SubjPreview);
         this._SubjPreview.classList.add("subjPreview"); this._SubjPreview.id = "subjPreview";
         var subjPreTbl = this._SubjPreview.appendChild(document.createElement("table")); subjPreTbl.classList.add("table-dark");
         var subjPreTblB = subjPreTbl.createTBody(); subjPreTblB.classList.add("text-center");
         createSubject.rows(this._subjects, subjPreTblB, true)
-
 
         //set min-height for contentContainer to height
         this._timeContent.style.minHeight = `${subjectsContainer.offsetHeight}px`;
@@ -418,6 +425,23 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         }, 50);
         
     }
+
+    //subject preview slide functions/eventhandling
+    private subjPreviewFunc = {
+        visToggle: {
+            target: HTMLDivElement.prototype,
+            toggle: (ev:any): void => {
+                var offset = this.subjPreviewFunc.visToggle.target.offsetWidth;
+                var ml;
+                var bp;
+                if(parseFloat(this.subjPreviewFunc.visToggle.target.style.marginLeft) < 0){ ml = 0; bp = _string.empty} else{ml = offset*-1; bp = "translateX(5%)"}
+                (ev.target as HTMLElement).style.transform = bp;
+                this.subjPreviewFunc.visToggle.target.style.marginLeft = ml + 'px';
+                this.scopeFunc.highlight.target.style.width = ((this._scopeC.offsetWidth / this.scopeFunc.cellW))*(this.scopeFunc.cCellW ) + 'px';
+            }
+        }
+    }
+
 
     //blink effect for elements
     private blink = async (target:any | HTMLElement) =>{
