@@ -432,12 +432,15 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             target: HTMLDivElement.prototype,
             toggle: (ev:any): void => {
                 var offset = this.subjPreviewFunc.visToggle.target.offsetWidth;
-                var ml;
-                var bp;
-                if(parseFloat(this.subjPreviewFunc.visToggle.target.style.marginLeft) < 0){ ml = 0; bp = _string.empty} else{ml = offset*-1; bp = "translateX(5%)"}
+                var pOffset = (this.scopeFunc.target.parentElement as HTMLElement).offsetWidth
+                var ml, bp, dv, cw; //margin-left //button-position //divider //cellwidth
+                if(parseFloat(this.subjPreviewFunc.visToggle.target.style.marginLeft) < 0){ ml = 0; bp = _string.empty; dv = ( pOffset - offset) } else{ml = offset*-1; bp = "translateX(5%)"; dv = pOffset }
                 (ev.target as HTMLElement).style.transform = bp;
                 this.subjPreviewFunc.visToggle.target.style.marginLeft = ml + 'px';
-                this.scopeFunc.highlight.target.style.width = ((this._scopeC.offsetWidth / this.scopeFunc.cellW))*(this.scopeFunc.cCellW ) + 'px';
+                //this.scopeFunc.highlight.target.style.width = ((dv / this.scopeFunc.cellW))*(this.scopeFunc.cCellW ) + 'px';
+                cw = dv / (this.scopeFunc.highlight.target.offsetWidth / this.scopeFunc.cCellW)
+                document.documentElement.style.setProperty('--cellW', (cw + "px"), "important");
+                createSubject.positioning(this._assignments, this._assignmentElements, true);
             }
         }
     }
@@ -463,7 +466,6 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         state: false,
         scroll: {
             x: (event: any): void => {
-                console.log(event)
                 this.scopeFunc.highlight.target.style.left = ((this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth) / 100) * (this.scopeFunc.target.scrollLeft / ((this.scopeFunc.target.scrollWidth - this.scopeFunc.target.clientWidth) / 100)) + 'px';
                 if(this.scopeFunc.highlight.target.offsetLeft < this._scopeC.scrollLeft){
                     this._scopeC.scrollLeft = this.scopeFunc.highlight.target.offsetLeft -1
@@ -600,7 +602,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             },
             start: (event: MouseEvent): void => {
                 event.preventDefault();
-                console.log(event.target)
+                //console.log(event.target)
                 if(event.target == this.scopeFunc.highlight.target){
                     this.scopeFunc.target.removeEventListener("scroll", this.scopeFunc.scroll.x)
                     this.scopeFunc.highlight.params.offset = this.scopeFunc.highlight.target.offsetLeft - event.pageX;
@@ -680,7 +682,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 var onceCell = (scopeC.querySelector("div") as HTMLDivElement).getBoundingClientRect().width;
                 var highligh = scopeC.appendChild(document.createElement("p"));
                 var totalView = (this.scopeFunc.target.offsetWidth / this.scopeFunc.cellW);
-                console.log("TotalView = " + this.scopeFunc.target.offsetWidth + " / " + this.scopeFunc.cellW + " = " + totalView)
+                //console.log("TotalView = " + this.scopeFunc.target.offsetWidth + " / " + this.scopeFunc.cellW + " = " + totalView)
                 var totalW = Math.floor(onceCell * totalView);
                 highligh.classList.add("highlight");
                 highligh.style.display = "block";
