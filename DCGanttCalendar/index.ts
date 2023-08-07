@@ -87,7 +87,7 @@ function createTableRowData(remSize:Float64Array | number, ddates:Date[], header
 
 //function for creating table data for subjects
 var createSubject = {
-    rows: function(subjects: string[], bodyToUse: HTMLTableSectionElement, preview?: boolean ){ //function to create table rows 
+    rows: (subjects: string[], bodyToUse: HTMLTableSectionElement, preview?: boolean ):void =>{ //function to create table rows 
         var isPreview: boolean;
         isPreview = preview ?? false;
         var tblBody = bodyToUse;
@@ -98,6 +98,8 @@ var createSubject = {
         trScope.textContent = "Dates";
         trScope.outerHTML = "<th" + trScope.outerHTML.slice(3, -3) + "th>";
         for(let subject in subjects){
+            //TODO: Add propper spacing where user can set how many subjects to be viewed at once.
+            //      Calculate on height of this.scopeFunc.target height and divide by subjects to be viewed.
             let trSubject = tblBody.appendChild(document.createElement("tr"));
             if(isPreview){trSubject.setAttribute("id", "prev-" + subjects[subject])}else{trSubject.setAttribute("id", subjects[subject]);}
             trSubject.classList.add("position-relative");
@@ -270,7 +272,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         this._startDate = context.parameters.startDate.raw ?? new Date(); //set _startDate value to context parameter startDate, if null default to new date
         this._endDate = context.parameters.endDate.raw ?? new Date((new Date()).getDate() + 1); //set _endDate value to context parameter endDate, if null default to new date
         this._dayWidth = context.parameters.dayWidth.raw ?? new Float64Array(); //set _dayWidth value to context parameter dayWidth, if null default to new number
-        this._subjects = ["Welding", "Lathing", "Drilling", "Milling"];
+        this._subjects = ["Welding", "Lathing", "Drilling", "Milling", "HandWork"];
         this._assignments = [
             { id: 0, subject: "Welding", title: "Stick Welding", start: (new Date("03.02.2023")), end: (new Date("03.06.2023")), canEdit: true},
             { id: 1, subject: "Welding", title: "Tig Welding", start: (new Date("03.25.2023")), end: (new Date("04.28.2023")), canEdit: true},
@@ -279,7 +281,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             { id: 4, subject: "Drilling", title: "Punching", start: (new Date("03.03.2023")), end: (new Date("03.20.2023")), canEdit: true},
             { id: 5, subject: "Drilling", title: "Boring", start: (new Date("03.21.2023")), end: (new Date("04.24.2023")), canEdit: true},
             { id: 6, subject: "Milling", title: "Positioning", start: (new Date("03.04.2023")), end: (new Date("04.18.2023")), canEdit: false},
-            { id: 7, subject: "Milling", title: "Zeroing", start: (new Date("04.19.2023")), end: (new Date("04.24.2023")), canEdit: false}
+            { id: 7, subject: "Milling", title: "Zeroing", start: (new Date("04.19.2023")), end: (new Date("04.24.2023")), canEdit: false},
+            { id: 8, subject: "HandWork", title: "Lock Tight", start: (new Date("03.02.2023")), end: (new Date("03.05.2023")), canEdit: false}
         ];
         //set controll variable values
         //generate array from start date to end date
@@ -434,18 +437,32 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 var offset = this.subjPreviewFunc.visToggle.target.offsetWidth;
                 var pOffset = (this.scopeFunc.target.parentElement as HTMLElement).offsetWidth
                 var ml, bp, dv, cw; //margin-left //button-position //divider //cellwidth
-                if(parseFloat(this.subjPreviewFunc.visToggle.target.style.marginLeft) < 0){ ml = 0; bp = _string.empty; dv = ( pOffset - offset) } else{ml = offset*-1; bp = "translateX(5%)"; dv = pOffset }
+                if(parseFloat(this.subjPreviewFunc.visToggle.target.style.marginLeft) < 0){ ml = 0; bp = _string.empty; dv = ( pOffset - offset); } else{ml = offset*-1; bp = "translateX(5%)"; dv = pOffset; }
                 (ev.target as HTMLElement).style.transform = bp;
                 this.subjPreviewFunc.visToggle.target.style.marginLeft = ml + 'px';
-                //this.scopeFunc.highlight.target.style.width = ((dv / this.scopeFunc.cellW))*(this.scopeFunc.cCellW ) + 'px';
-                cw = dv / (this.scopeFunc.highlight.target.offsetWidth / this.scopeFunc.cCellW)
+                cw = dv / (this.scopeFunc.highlight.target.offsetWidth / this.scopeFunc.cCellW);
                 document.documentElement.style.setProperty('--cellW', (cw + "px"), "important");
                 createSubject.positioning(this._assignments, this._assignmentElements, true);
+                this.scopeFunc.target.scrollLeft = this.scopeFunc.highlight.target.offsetLeft * (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth)/(this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth)
+                // this.highlighSync();
             }
         }
     }
 
-
+    //sync highligh instant/delayed
+    private highlighSync = ( delay?: number) => {
+        delay == undefined ? delay = 0 : delay = delay;
+        var scrollTarget = this.scopeFunc.target;
+        var targetScrlWidth = (scrollTarget.scrollWidth);
+        var targetOffWidth = scrollTarget.offsetWidth;
+        var highlighTarget = this.scopeFunc.highlight.target;
+        var highlighOffLeft = this.scopeFunc.highlight.target.offsetLeft;
+        var highlightScrlWidth = this._scopeC.scrollWidth;
+        var highlightOffWidth = this.scopeFunc.highlight.target.offsetWidth;
+        setTimeout(() : void => {
+            scrollTarget.scrollLeft = highlighTarget.offsetLeft * (scrollTarget.scrollWidth - scrollTarget.offsetWidth)/(highlightScrlWidth - highlighTarget.offsetWidth);
+        },delay);
+    }
     //blink effect for elements
     private blink = async (target:any | HTMLElement) =>{
         //window.alert("blinking");
@@ -725,7 +742,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
     private mouseButtonRelease( event: MouseEvent ): void{
         switch (event.button){
             case 0: sliderVars.state = false; break; //left mouse button
-            //case 1: this.scopeFunc.align.center(); break; //middle mouse buttone
+            case 1: this.highlighSync(500); break;//this.scopeFunc.align.center(); break; //middle mouse buttone
             //case 2: this.scopeFunc.align.today(this.scopeFunc.target); break; //right mouse button
         }
     }
