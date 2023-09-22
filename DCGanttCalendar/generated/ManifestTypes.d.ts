@@ -8,6 +8,8 @@ export interface IInputs {
     startDate: ComponentFramework.PropertyTypes.DateTimeProperty;
     endDate: ComponentFramework.PropertyTypes.DateTimeProperty;
     dayWidth: ComponentFramework.PropertyTypes.DecimalNumberProperty;
+    Assignments: ComponentFramework.PropertyTypes.DataSet;
+    Subjects: ComponentFramework.PropertyTypes.DataSet;
 }
 export interface IOutputs {
     displayErrors?: boolean;

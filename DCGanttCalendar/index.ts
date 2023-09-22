@@ -23,8 +23,9 @@ var dayIndex:String[] = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
 var _string = { //custom string creater that can return an empty string, random string provided that needs a lenght for the string, and lorem ipsum with word count/length (0 for entire).
     empty: '',
 
-    rand: function(len:number){
+    rand: function(len?:number){
         let res = '';
+        if(len == undefined){len = 1;}
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         for(let i = 0; i < len; i++){
             res += chars.charAt(Math.floor(Math.random() * chars.length))
@@ -66,7 +67,7 @@ function createTableRowData(remSize:Float64Array | number, ddates:Date[], header
                 ddDay.setAttribute("data-toggle", "tooltip");
                 ddDay.setAttribute("data-placement", "top");
                 ddDay.setAttribute("title", ddates[i].toDateString());
-                ddDay.setAttribute("style", "height: " + remSize + "rem !important; border: solid thin black;");
+                ddDay.setAttribute("style", "height: var(--thH) !important; border: solid thin black;");
             }
         }else{
             for(let i = 0; i < ddates.length; i++){
@@ -88,20 +89,19 @@ function createTableRowData(remSize:Float64Array | number, ddates:Date[], header
 //function for creating table data for subjects
 var createSubject = {
     rows: (subjects: string[], bodyToUse: HTMLTableSectionElement, preview?: boolean ):void =>{ //function to create table rows 
-        var isPreview: boolean;
-        isPreview = preview ?? false;
+        preview != undefined ? preview = true : preview = false;
         var tblBody = bodyToUse;
         let trElm = tblBody.appendChild(document.createElement("tr"));
         var trScope = trElm.insertCell();
         trScope.setAttribute("style", "height: 1rem");
-        if(isPreview){trScope.setAttribute("id", "prev-tableDates")}else{trScope.setAttribute("id", "tableDates");}
+        if(preview){trElm.setAttribute("id", "prev-tableDates")}else{trElm.setAttribute("id", "tableDates");}
         trScope.textContent = "Dates";
         trScope.outerHTML = "<th" + trScope.outerHTML.slice(3, -3) + "th>";
         for(let subject in subjects){
             //TODO: Add propper spacing where user can set how many subjects to be viewed at once.
             //      Calculate on height of this.scopeFunc.target height and divide by subjects to be viewed.
             let trSubject = tblBody.appendChild(document.createElement("tr"));
-            if(isPreview){trSubject.setAttribute("id", "prev-" + subjects[subject])}else{trSubject.setAttribute("id", subjects[subject]);}
+            if(preview){trSubject.setAttribute("id", "prev-" + subjects[subject])}else{trSubject.setAttribute("id", subjects[subject]);}
             trSubject.classList.add("position-relative");
             let thSubject = trSubject.insertCell();
             thSubject.setAttribute("scope", "row");
@@ -130,6 +130,9 @@ var createSubject = {
         return assignmentsArray;
     },
     positioning: function(assignments: assignmentType[], coElements: HTMLTableCellElement[], resetFirst: boolean){
+        //TODO: fix overlapping? done?
+        var storedAssignments: any[] = [];
+        var lapperWrapper = 0;
         for(let i = 0; i < assignments.length; i++){
             var thisElement: HTMLTableCellElement = coElements[i];
             if(resetFirst == true){thisElement.setAttribute("style", "");}
@@ -147,8 +150,46 @@ var createSubject = {
             var theMargin = +startX - +absoluteX;
             var theWidth = +endX + +endWidthX - +startX;
             //calculations.. END
+            //overlap check?
             //set calculations to element
             thisElement.setAttribute("style", "margin-left: "+ +theMargin +"px; width: "+ +theWidth +"px; background: red; border: solid thin black;");
+            
+            storedAssignments.push(thisElement);
+        }
+        for(let i = 0; i < storedAssignments.length; i++){
+            var curElm = storedAssignments[i];
+            var curAsgn = assignments.find(i => i.id === parseInt(curElm.getAttribute("id").slice(11)));
+            for(let j = 0; j < storedAssignments.length; j++){
+                var compElm = storedAssignments[j];
+                var compAsgn = assignments.find(i => i.id === parseInt(compElm.getAttribute("id").slice(11)))
+                if((curAsgn?.id != compAsgn?.id) && (curAsgn?.subject == compAsgn?.subject)){
+                    var compSX = parseFloat(compElm.style.marginLeft);
+                    var compEX = compElm.offsetWidth;
+                    var curSX = parseFloat(curElm.style.marginLeft);
+                    var curEX = curElm.offsetWidth;
+                    if(
+                        (compSX > curSX && compSX < curSX+curEX)||
+                        (compSX+compEX > curSX && compSX+compEX < curSX+curEX)||
+                        (compSX < curSX && compSX+compEX > curSX+curEX)
+                    ){
+                        var curParent = curElm.parentElement;
+                        var compParent = compElm.parentElement;
+                        if(curParent.getAttribute("class") == "overlapper"){
+                            curParent.appendChild(compElm)
+                        }else if(compParent.getAttribute("class") == "overlapper"){
+                            compParent.appendChild(curElm)
+                        }else{
+                            var disLapper = curElm.parentElement.appendChild(document.createElement("div"));
+                            disLapper.classList.add("overlapper");
+                            disLapper.id = lapperWrapper;
+                            disLapper.appendChild(curElm);
+                            disLapper.appendChild(compElm);
+                            lapperWrapper++;
+                        }
+                    }
+
+                }
+            }
         }
     }
 };
@@ -178,11 +219,14 @@ var sliderVars = {
 
 //end of custom functions
 
-interface assignmentType {id: number, subject: string, title: string, start: Date, end: Date, canEdit: boolean}
-
+interface assignmentType {id: number, subject: string, title: string, start: Date, end: Date, description: string, canEdit: boolean}
+//dataset specific object class with related table
+class pcfRelObj {
+    'Id': number | string
+    'Value': number | string
+}
 
 export class DCGanttCalendar implements ComponentFramework.StandardControl<IInputs, IOutputs> {
-
     //debugging variables
 
     // Value of the field is stored and used inside the control
@@ -221,6 +265,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
     //tbody element
     private _tableBody: HTMLTableSectionElement;
 
+    private _subjPreTblB: HTMLTableSectionElement;
+
     //elements for the subjects
     //subject table element
     private _subjectTable: HTMLTableElement;
@@ -234,7 +280,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
     private _scopeC: HTMLDivElement;
 
     //collection of all the subjects from context IInput
-    private _subjects: string[];
+    private _subjects: any;
     //collection of all the assignments from context IInput
     private _assignments: assignmentType[];
     //collection of created assignment elements, used when updating values and position
@@ -243,9 +289,14 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
     //timeline Scope scroll bar element
     private _scope: HTMLDivElement;
     //scopes click event for nav left and right
-    private _clickEvent:EventListenerOrEventListenerObject;
+    //private _clickEvent:EventListenerOrEventListenerObject;
 
     private _cellWidth: number;
+
+    //raw dataset placeholder used to check for changes
+    private _asgnDataset: ComponentFramework.PropertyTypes.DataSet;
+    private _subjDataset: ComponentFramework.PropertyTypes.DataSet;
+    
 
 
 
@@ -272,18 +323,23 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         this._startDate = context.parameters.startDate.raw ?? new Date(); //set _startDate value to context parameter startDate, if null default to new date
         this._endDate = context.parameters.endDate.raw ?? new Date((new Date()).getDate() + 1); //set _endDate value to context parameter endDate, if null default to new date
         this._dayWidth = context.parameters.dayWidth.raw ?? new Float64Array(); //set _dayWidth value to context parameter dayWidth, if null default to new number
+        this._subjects = ['Sample'];
+        this._assignments = [{id: 0, subject: 'Sample', title: "Sample Assignment", start: (new Date()), end: new Date((new Date()).getDate() + 5), description: "test", canEdit: false}]
+        /* this._subjects = context.parameters.subjects.getSelectedRecordIds
+        console.log(this._subjects);
         this._subjects = ["Welding", "Lathing", "Drilling", "Milling", "HandWork"];
         this._assignments = [
             { id: 0, subject: "Welding", title: "Stick Welding", start: (new Date("03.02.2023")), end: (new Date("03.06.2023")), canEdit: true},
             { id: 1, subject: "Welding", title: "Tig Welding", start: (new Date("03.25.2023")), end: (new Date("04.28.2023")), canEdit: true},
-            { id: 2, subject: "Lathing", title: "Cone Lathing", start: (new Date("03.02.2023")), end: (new Date("03.23.2023")), canEdit: true},
-            { id: 3, subject: "Lathing", title: "Centering", start: (new Date("03.25.2023")), end: (new Date("04.28.2023")), canEdit: false},
-            { id: 4, subject: "Drilling", title: "Punching", start: (new Date("03.03.2023")), end: (new Date("03.20.2023")), canEdit: true},
-            { id: 5, subject: "Drilling", title: "Boring", start: (new Date("03.21.2023")), end: (new Date("04.24.2023")), canEdit: true},
-            { id: 6, subject: "Milling", title: "Positioning", start: (new Date("03.04.2023")), end: (new Date("04.18.2023")), canEdit: false},
-            { id: 7, subject: "Milling", title: "Zeroing", start: (new Date("04.19.2023")), end: (new Date("04.24.2023")), canEdit: false},
-            { id: 8, subject: "HandWork", title: "Lock Tight", start: (new Date("03.02.2023")), end: (new Date("03.05.2023")), canEdit: false}
-        ];
+            { id: 2, subject: "Welding", title: "MIG(Metal inert gas)", start: (new Date("03.04.2023")), end: (new Date("03.07.2023")), canEdit: true},
+            { id: 3, subject: "Lathing", title: "Cone Lathing", start: (new Date("03.02.2023")), end: (new Date("03.23.2023")), canEdit: true},
+            { id: 4, subject: "Lathing", title: "Centering", start: (new Date("03.25.2023")), end: (new Date("04.28.2023")), canEdit: false},
+            { id: 5, subject: "Drilling", title: "Punching", start: (new Date("03.03.2023")), end: (new Date("03.20.2023")), canEdit: true},
+            { id: 6, subject: "Drilling", title: "Boring", start: (new Date("03.21.2023")), end: (new Date("04.24.2023")), canEdit: true},
+            { id: 7, subject: "Milling", title: "Positioning", start: (new Date("03.04.2023")), end: (new Date("04.18.2023")), canEdit: false},
+            { id: 8, subject: "Milling", title: "Zeroing", start: (new Date("04.19.2023")), end: (new Date("04.24.2023")), canEdit: false},
+            { id: 9, subject: "HandWork", title: "Lock Tight", start: (new Date("03.02.2023")), end: (new Date("03.05.2023")), canEdit: false}
+        ]; */
         //set controll variable values
         //generate array from start date to end date
         var dates = getDaysArray(this._startDate, this._endDate);
@@ -306,7 +362,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         var _tableBody = this._table.createTBody();
         //creating variable to be set/used on table cell width/height
         var dayWidthToUse = this._dayWidth;
-        var dayHeightToUse = +(this._subjects.length * 2);
+        var dayHeightToUse = +(1 * 2);
         this._dayHeight = +dayHeightToUse;
         //creating table for subjects
         var subjectsContainer = document.createElement("div"); subjectsContainer.id = "SubjectsContainer"; subjectsContainer.classList.add("subjectsContainer");
@@ -314,7 +370,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         this._subjectTable.classList.add("table-dark");
         this._subjectBody = this._subjectTable.createTBody();
         this._subjectBody.classList.add("text-center");
-        createSubject.rows(this._subjects, this._subjectBody);
+        
         
 
 
@@ -334,6 +390,8 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         this._container.id = "pageContainer";
         this._timeContent = this._timelineContainer.appendChild(document.createElement("div"));
         this._timeContent.classList.add("contentContainer", "row");
+        this._container.style.height = `${context.mode.allocatedHeight}px`;
+        this._container.style.width = `${context.mode.allocatedWidth}px`;
 
 
 
@@ -351,11 +409,12 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         this._timelineContainer.prepend(this._SubjPreview);
         this._SubjPreview.classList.add("subjPreview"); this._SubjPreview.id = "subjPreview";
         var subjPreTbl = this._SubjPreview.appendChild(document.createElement("table")); subjPreTbl.classList.add("table-dark");
-        var subjPreTblB = subjPreTbl.createTBody(); subjPreTblB.classList.add("text-center");
-        createSubject.rows(this._subjects, subjPreTblB, true)
+        this._subjPreTblB = subjPreTbl.createTBody(); this._subjPreTblB.classList.add("text-center");
 
         //set min-height for contentContainer to height
         this._timeContent.style.minHeight = `${subjectsContainer.offsetHeight}px`;
+        this._SubjPreview.style.minHeight = `${subjectsContainer.offsetHeight}px`;
+        
 
 
         //scope - scroll in timeline 
@@ -392,9 +451,9 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         this._scopeC = scopeC;
 
 
-        this.scopeFunc.setup.subjects(this._subjects, scopeC);
+        
         this.scopeFunc.setup.dates(dates, scopeC);
-        this.scopeFunc.setup.assignments(this._assignments, scopeC);
+        
         this.scopeFunc.setup.highlight(scopeC);
         console.log("days count = " + dates.length);
         
@@ -416,18 +475,18 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         var scopeAlgRText = scopeAlgR.appendChild(document.createElement("p")); scopeAlgRText.textContent = "⟞";
         scopeAlgR.addEventListener("click", this.scopeFunc.align.end.bind(this));
         
-        //finish making assignments
-        this._assignmentElements = createSubject.assignment(this._assignments);
-        createSubject.positioning(this._assignments, this._assignmentElements, false);
+        
 
         //bind function to check if Left Mouse Button was released, used to stop drag and other events
         document.addEventListener('mouseup', this.mouseButtonRelease.bind(this));
         
         setTimeout((): void =>{ //makes calendar scroll to day and blink the day in the calendar
-            this.scopeFunc.align.today(this.scopeFunc.target);
-        }, 50);
+            this.scopeFunc.align.today(this._row);
+        }, 160);
+
         
     }
+
 
     //subject preview slide functions/eventhandling
     private subjPreviewFunc = {
@@ -446,19 +505,15 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 this.scopeFunc.target.scrollLeft = this.scopeFunc.highlight.target.offsetLeft * (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth)/(this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth)
                 // this.highlighSync();
             }
-        }
+        },
     }
 
     //sync highligh instant/delayed
     private highlighSync = ( delay?: number) => {
-        delay == undefined ? delay = 0 : delay = delay;
+        if (delay == undefined){delay = 0;}
         var scrollTarget = this.scopeFunc.target;
-        var targetScrlWidth = (scrollTarget.scrollWidth);
-        var targetOffWidth = scrollTarget.offsetWidth;
         var highlighTarget = this.scopeFunc.highlight.target;
-        var highlighOffLeft = this.scopeFunc.highlight.target.offsetLeft;
         var highlightScrlWidth = this._scopeC.scrollWidth;
-        var highlightOffWidth = this.scopeFunc.highlight.target.offsetWidth;
         setTimeout(() : void => {
             scrollTarget.scrollLeft = highlighTarget.offsetLeft * (scrollTarget.scrollWidth - scrollTarget.offsetWidth)/(highlightScrlWidth - highlighTarget.offsetWidth);
         },delay);
@@ -481,6 +536,10 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
         cellW: 0,
         cCellW: 0,
         state: false,
+        settings: {
+            subs: 4,
+            days: 7,
+        },
         scroll: {
             x: (event: any): void => {
                 this.scopeFunc.highlight.target.style.left = ((this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth) / 100) * (this.scopeFunc.target.scrollLeft / ((this.scopeFunc.target.scrollWidth - this.scopeFunc.target.clientWidth) / 100)) + 'px';
@@ -491,17 +550,6 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 }
             },
             y: (event: any): void => {
-
-            }
-        },
-        step: {
-            left: (): void => {
-                let cellWidth = (this._tableHead.firstChild?.firstChild as HTMLTableCellElement).offsetWidth;
-                this.scopeFunc.target.scrollLeft = this.scopeFunc.target.scrollLeft - cellWidth;
-            },
-            right: (): void => {
-                let cellWidth = (this._tableHead.firstChild?.firstChild as HTMLTableCellElement).offsetWidth;
-                this.scopeFunc.target.scrollLeft = this.scopeFunc.target.scrollLeft + cellWidth;
 
             }
         },
@@ -523,7 +571,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                     findToday = findToday as HTMLTableCellElement;
                     var todayBound = findToday.getBoundingClientRect();
                     var targetBound = target.getBoundingClientRect();
-                    target.scrollLeft = todayBound.x - (targetBound.width / 2);
+                    this.scopeFunc.target.scrollLeft = todayBound.x - (targetBound.width / 2);
                     this.blink(findToday);
                 }else{
                     if (this._errors){
@@ -564,15 +612,37 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 }
             },
         },
+        step: {
+            left: (): void => {
+                let cellWidth = (document.getElementById("table-head-row")?.firstChild as HTMLTableCellElement).offsetWidth;
+                this.scopeFunc.target.scrollLeft = this.scopeFunc.target.scrollLeft - cellWidth;
+            },
+            right: (): void => {
+                let cellWidth = (document.getElementById("table-head-row")?.firstChild as HTMLTableCellElement).offsetWidth;
+                this.scopeFunc.target.scrollLeft = this.scopeFunc.target.scrollLeft + cellWidth;
+
+            }
+        },
         jump: {
             right: (): void => {
-                var jumpTimes = Math.floor(this.scopeFunc.target.offsetWidth / this.scopeFunc.cellW);
-                this.scopeFunc.target.scrollLeft = this.scopeFunc.target.scrollLeft + (this.scopeFunc.cellW * jumpTimes); 
+                //let cellWidth = (this._tableHead.firstChild?.firstChild as HTMLTableCellElement).offsetWidth;
+                var cellWidth = parseFloat(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cellW")).toFixed(2));
+                this.scopeFunc.target.scrollLeft += ((this.scopeFunc.highlight.target.offsetWidth / this.scopeFunc.cCellW)*cellWidth);
+                console.log("cellWidth: " + cellWidth)
+                console.log("cellW: " + this.scopeFunc.cellW)
+                console.log("cCellW: " + this.scopeFunc.cCellW)
+                console.log("target.offsetWidth: " + this.scopeFunc.highlight.target.offsetWidth)
+                console.log("target.offsetWidth/cCellw: " + (this.scopeFunc.highlight.target.offsetWidth / this.scopeFunc.cCellW))
                 
             },
             left: (): void => {
-                var jumpTimes = Math.floor(this.scopeFunc.target.offsetWidth / this.scopeFunc.cellW);
-                this.scopeFunc.target.scrollLeft = this.scopeFunc.target.scrollLeft - (this.scopeFunc.cellW * jumpTimes);
+                var cellWidth = parseFloat(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cellW")).toFixed(2));
+                this.scopeFunc.target.scrollLeft -= ((this.scopeFunc.highlight.target.offsetWidth / this.scopeFunc.cCellW)*cellWidth);
+                console.log("cellWidth: " + cellWidth)
+                console.log("cellW: " + this.scopeFunc.cellW)
+                console.log("cCellW: " + this.scopeFunc.cCellW)
+                console.log("target.offsetWidth: " + this.scopeFunc.highlight.target.offsetWidth)
+                console.log("target.offsetWidth/cCellw: " + (this.scopeFunc.highlight.target.offsetWidth / this.scopeFunc.cCellW))
             }
         },
         highlight: {
@@ -629,11 +699,12 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 }
             },
             move: (event:MouseEvent): void => {
+                var toMoveMax = (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth);
+                var toMoveMin = 0;
                 var toMove = (this.scopeFunc.highlight.params.offset + event.pageX);
-                if ((toMove > 0) && toMove  < this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth){
-                    this.scopeFunc.highlight.target.style.left = toMove +'px';
-                    this.scopeFunc.target.scrollLeft = toMove * (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth) / (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth);
-                }
+                if (toMove < toMoveMin){toMove = toMoveMin;}
+                else if(toMove > toMoveMax){ toMove = toMoveMax;}
+                this.scopeFunc.highlight.target.style.left = toMove +'px';
                 this.scopeFunc.target.scrollLeft = toMove * (this.scopeFunc.target.scrollWidth - this.scopeFunc.target.offsetWidth) / (this._scopeC.scrollWidth - this.scopeFunc.highlight.target.offsetWidth);
             },
             end: (ev: any): void => {
@@ -651,7 +722,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             subjects: (subjects: string[], target: HTMLElement): void =>{
                 var scopeCSub = target.appendChild(document.createElement("div").appendChild(document.createElement("table")));
                 var scopeCSubTB = scopeCSub.createTBody();
-                var subjectHeight = (this.scopeFunc.target.querySelector("[id='"+ subjects[1]+ "']") as HTMLTableRowElement).getBoundingClientRect().height;
+                var subjectHeight = (this.scopeFunc.target.querySelector("[id='"+ subjects[0]+ "']") as HTMLTableRowElement).getBoundingClientRect().height;
                 var countHeight = Math.floor(Math.floor(target.getBoundingClientRect().height) / Math.floor(subjectHeight))
                 var trHeight = Math.floor(scopeCSub.getBoundingClientRect().height / countHeight);
                 for(let i = 0; i < subjects.length; i++){
@@ -700,7 +771,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
                 var highligh = scopeC.appendChild(document.createElement("p"));
                 var totalView = (this.scopeFunc.target.offsetWidth / this.scopeFunc.cellW);
                 //console.log("TotalView = " + this.scopeFunc.target.offsetWidth + " / " + this.scopeFunc.cellW + " = " + totalView)
-                var totalW = Math.floor(onceCell * totalView);
+                var totalW = Math.floor(onceCell * this.scopeFunc.settings.days);
                 highligh.classList.add("highlight");
                 highligh.style.display = "block";
                 highligh.style.width = totalW + 'px';
@@ -738,6 +809,72 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
 
         }
     }
+    private datasetHandle = { //custom handling of datasets
+        update : {
+            assignments : (dataset:ComponentFramework.PropertyTypes.DataSet, asgn:assignmentType[]) : void => {
+                console.log("dataSetHandle Updating Assignments");
+                dataset.sortedRecordIds.forEach((recordId: any) => {
+                    var curRec = dataset.records[recordId]; //get current record by id
+                    //create template object to be pushed into assignments later
+                    var curObj: assignmentType = {id: 0, title: "title", subject: "subject", start: new Date(), end: new Date(), description: "description", canEdit: true};
+                    dataset.columns.forEach((column: any) => {
+                        var colName = (column.displayName).toLowerCase();
+                        var fVal = curRec.getFormattedValue(column.name);
+                        var uVal: unknown = curRec.getValue(column.name);
+                        var dateSplt = ["0","0","0"];
+                        if(colName == "start" || colName == "end"){dateSplt = fVal.split("/");}
+                        switch(colName){
+                            case "id":{
+                                curObj.id = parseInt(uVal as string);
+                                break;
+                            }
+                            case "title": {
+                                curObj.title = fVal;
+                                break;
+                            }
+                            case "subject": {
+                                //uVal = {"@odata.type":"#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference","Id":2,"Value":"Welding"};
+                                var relObj = (uVal as pcfRelObj);
+                                curObj.subject = relObj.Value.toString();
+                                break;
+                            }
+                            case "description": {
+                                curObj.description = fVal;
+                                break;
+                            }
+                            case "start": {
+                                curObj.start = new Date(parseInt(dateSplt[2]), parseInt(dateSplt[1])-1, parseInt(dateSplt[0]));
+                                break;
+                            }
+                            case "end": {
+                                curObj.end = new Date(parseInt(dateSplt[2]), parseInt(dateSplt[1])-1, parseInt(dateSplt[0]));
+                                break;
+                                }
+                            case "forced": {
+                                //if(uVal == "FALSE" || uVal == "TRUE"){if(uVal == "FALSE"){curObj.canEdit = false; break;}else if(uVal == "TRUE"){curObj.canEdit == true; break;}}
+                                curObj.canEdit = (uVal as boolean);
+                                break;
+                            }
+                        }
+                    });
+                asgn.push(curObj);
+                });
+                asgn.length == 0?? asgn.push({id: 0, title: "SampleTitle", subject: "SampleSubject", start: new Date(), end: new Date(), description: "SampleDescription", canEdit: true});
+            },
+            subjects : (dataset:ComponentFramework.PropertyTypes.DataSet, subj:string[]): void => {
+                console.log("dataSetHandle Updating Subjects");
+                dataset.sortedRecordIds.forEach((recordId: any) => {
+                    var curRec = dataset.records[recordId];
+                    dataset.columns.forEach((column: any) => {
+                        if(column.displayName.toLowerCase() == "title" || column.displayName.toLowerCase() == "subjecttitle"){
+                            subj.push(curRec.getFormattedValue(column.name));
+                        }
+                    });
+                });
+                subj.length == 0?? this._subjects.push("SampleSubject");
+            }
+        }
+    }
 
     private mouseButtonRelease( event: MouseEvent ): void{
         switch (event.button){
@@ -755,14 +892,118 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
      * @param context The entire property bag available to control via Context Object; It contains values as set up by the customizer mapped to names defined in the manifest, as well as utility functions
      */
     public updateView(context: ComponentFramework.Context<IInputs>): void
-    {       //console.log("updating view");
-        
- 
-
+    {       
+        console.log("updating view v2.3.4");
+        var devCheck = false;
+        var ipaddress = location.host;
+        if(ipaddress == "localhost:8181"){devCheck = true; }
+        console.log("DevCheck, ip:'" + ipaddress + "', devCheckState("+ devCheck.toString() +")");
         // Add code to update control view
         //set control container size to component's height and width
         this._container.style.height = `${context.mode.allocatedHeight}px`;
         this._container.style.width = `${context.mode.allocatedWidth}px`;
+        //subjectsPreview height fix
+        var datasetAsgnUpdate = false;
+        var datasetSubjUpdate = false;
+        //check for change in assignments
+        if (context.parameters.Assignments != this._asgnDataset && devCheck == false){
+            datasetAsgnUpdate = true;
+            console.log("updating assignments");
+            this._assignments = [];
+            if(devCheck){}else{this._asgnDataset = context.parameters.Assignments;} //update current dataset placeholder
+            this._asgnDataset.sortedRecordIds.forEach((recordId: any) => {
+                var curRec = this._asgnDataset.records[recordId]; //get current record by id
+                //create template object to be pushed into assignments later
+                var curObj: assignmentType = {id: 0, title: "title", subject: "subject", start: new Date(), end: new Date(), description: "description", canEdit: true};
+                this._asgnDataset.columns.forEach((column: any) => {
+                    var colName = (column.displayName).toLowerCase();
+                    var fVal = curRec.getFormattedValue(column.name);
+                    var uVal: unknown = curRec.getValue(column.name);
+                    var dateSplt = ["0","0","0"];
+                    if(colName == "start" || colName == "end"){dateSplt = fVal.split("/");}
+                    switch(colName){
+                        case "id":{
+                            curObj.id = parseInt(uVal as string);
+                            break;
+                        }
+                        case "title": {
+                            curObj.title = fVal;
+                            break;
+                        }
+                        case "subject": {
+                            //uVal = {"@odata.type":"#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference","Id":2,"Value":"Welding"};
+                            var relObj = (uVal as pcfRelObj);
+                            curObj.subject = relObj.Value.toString();
+                            break;
+                        }
+                        case "description": {
+                            curObj.description = fVal;
+                            break;
+                        }
+                        case "start": {
+                            curObj.start = new Date(parseInt(dateSplt[2]), parseInt(dateSplt[1])-1, parseInt(dateSplt[0]));
+                            break;
+                        }
+                        case "end": {
+                            curObj.end = new Date(parseInt(dateSplt[2]), parseInt(dateSplt[1])-1, parseInt(dateSplt[0]));
+                            break;
+                            }
+                        case "forced": {
+                            //if(uVal == "FALSE" || uVal == "TRUE"){if(uVal == "FALSE"){curObj.canEdit = false; break;}else if(uVal == "TRUE"){curObj.canEdit == true; break;}}
+                            curObj.canEdit = (uVal as boolean);
+                            break;
+                        }
+                    }
+                });
+                this._assignments.push(curObj);
+            });
+        }
+        console.log(this._assignments);
+        //check for change in subjects
+        if (context.parameters.Subjects != this._subjDataset){
+            datasetSubjUpdate = true;
+            console.log("updating subjects");
+            this._subjDataset = context.parameters.Subjects; //update current dataset placeholder
+            this._subjects = [];
+            
+            this._subjDataset.sortedRecordIds.forEach((recordId: any) => {
+                var curRec = this._subjDataset.records[recordId];
+                this._subjDataset.columns.forEach((column: any) => {
+                    if(column.displayName.toLowerCase() == "title"){
+                        this._subjects.push(curRec.getFormattedValue(column.name));
+                    }
+                });
+            });
+            this._subjects.length == 0?? this._subjects.push("Sample");
+            
+            
+        }else if(devCheck == true){
+            this._subjects = ["Welding", "Lathing"]
+        }
+        console.log(this._subjects)
+
+        if (datasetAsgnUpdate == true || datasetSubjUpdate == true){
+            this._subjectBody.innerHTML = "";
+            createSubject.rows(this._subjects, this._subjectBody);
+
+            this.scopeFunc.setup.subjects(this._subjects, this._scopeC);
+            this._subjPreTblB.innerHTML = "";
+            createSubject.rows(this._subjects, this._subjPreTblB, true)
+
+            this._assignmentElements = createSubject.assignment(this._assignments);
+            createSubject.positioning(this._assignments, this._assignmentElements, false); //update assignments positioning
+            this.scopeFunc.setup.assignments(this._assignments, this._scopeC);
+        }
+        //var init_subsH = (this._container.offsetHeight - this._scope.offsetHeight - (1 * parseFloat(getComputedStyle(document.documentElement).fontSize)))/this.scopeFunc.settings.subs;
+        var init_subsH = ((parseFloat(this._container.style.height) - this._scope.offsetHeight - (document.querySelector("th[id='prev-tableDates']") as HTMLElement).offsetHeight))/this.scopeFunc.settings.subs;
+        console.log((document.querySelector("th[id='prev-tableDates']") as HTMLElement).offsetHeight);
+        console.log(parseFloat(this._container.style.height))
+        console.log(this._scope.offsetHeight)
+        var cw = (this._timeContent.offsetWidth / (this.scopeFunc.highlight.target.offsetWidth / this.scopeFunc.cCellW))
+        document.documentElement.style.setProperty('--cellW', (+cw + "px"), "important");
+        document.documentElement.style.setProperty('--subsH', (init_subsH + "px"), "important");
+        document.documentElement.style.setProperty('--thH', (init_subsH*this._subjects.length + "px"), "important");
+        (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--subsH')))
         //this._timeContent.style.minWidth = `${context.mode.allocatedHeight}px`;
         this._context = context;
         //check if dates has been altered
@@ -814,6 +1055,7 @@ export class DCGanttCalendar implements ComponentFramework.StandardControl<IInpu
             }
             createSubject.positioning(this._assignments, this._assignmentElements, true); //update assignments positioning
         }
+
         
         
     }

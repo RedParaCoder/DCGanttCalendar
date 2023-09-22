@@ -1,14 +1,26 @@
 :root{
     --cellW: 150px;
+    --subsH: 59px;
+    --thH: 236px
 }
 .calendarDate{
-    box-sizing: content-box;
-    max-width: var(--cellW) !important;
-    min-width: var(--cellW) !important;
+    box-sizing: border-box;
+    max-width: calc(var(--cellW) - 1px) !important;
+    min-width: calc(var(--cellW) - 1px) !important;
     height: 1rem;
 }
+.calendarDate:first-child{
+    box-sizing: border-box;
+    max-width: var(--cellW) !important;
+    min-width: var(--cellW) !important;
+}
+.calendarDate:last-child{
+    box-sizing: border-box;
+    max-width: var(--cellW) !important;
+    min-width: var(--cellW) !important;
+}
 .calendarDate *{
-    box-sizing: content-box;
+    box-sizing: border-box;
 }
 /* noscrollbars for contentContainer */
 .contentContainer::-webkit-scrollbar{
@@ -37,8 +49,15 @@
 .tableContainer table thead tr th {
     text-align: center;
 }
+.tableContainer table thead tr th:last-child{
+    border-right: none !important;
+}
 .tableContainer table tbody tr td{
+    height: 100%;
     box-sizing: content-box;
+}
+.tableContainer table tbody tr td:last-child{
+    border-right: none !important;
 }
 .today{
     background-color: red;
@@ -48,18 +67,19 @@
     background-color: transparent;
     
 }
-.scopeCenter::-webkit-scrollbar, .pageContainer::-webkit-scrollbar{
+.scopeCenter::-webkit-scrollbar, .timelineContainer::-webkit-scrollbar{
     width: 0.5rem;
     height: 0.5rem;
     border: none;
     background: transparent;
     
 }
-.scopeCenter::-webkit-scrollbar-track, .pageContainer::-webkit-scrollbar-track{
+.scopeCenter::-webkit-scrollbar-track, .timelineContainer::-webkit-scrollbar-track{
     background: transparent;
     border: solid thin black;
+    border-bottom: none;
 }
-.scopeCenter::-webkit-scrollbar-thumb, .pageContainer::-webkit-scrollbar-thumb{
+.scopeCenter::-webkit-scrollbar-thumb, .timelineContainer::-webkit-scrollbar-thumb{
     resize: vertical !important;
     background: #555;
     border-radius: 1rem;
@@ -67,9 +87,18 @@
     border-bottom-left-radius: 0;
     border: solid thin black;
 }
-.scopeCenter::-webkit-scrollbar-thumb:hover, .pageContainer::-webkit-scrollbar-thumb:hover{
+.scopeCenter::-webkit-scrollbar-thumb:hover, .timelineContainer::-webkit-scrollbar-thumb:hover{
     background: #725e5e;
     border: solid thin black
+}
+
+.timelineContainer{ /*container for subjects placeholder and calendar */
+    /* overflow: hidden; */
+    height: calc(100% - 35px);
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    overflow-y: scroll !important;
 }
 
 .contentContainer thead tr th{ /* timeline table */
@@ -87,13 +116,7 @@
 #table-head-row th:first-child, #table-body-row td:first-child{
     border-left: none !important;
 }
-.timelineContainer{ /*container for subjects placeholder and calendar */
-    /* overflow: hidden; */
-    height: calc(100% - 35px);
-    padding: 0 !important;
-    margin: 0 !important;
-    display: flex;
-}
+
 
 .subjectsContainer{
     position: sticky;
@@ -109,9 +132,24 @@
     position: sticky;
     left: 0;
 }
+.assignmentP{
+    transform: translateY(-100%);
+}
 .subjectsContainer table tbody tr{ /* subject table tr*/
     border: solid thin black !important;
     border-bottom: none !important;
+}
+#tableDates{
+    position: relative;
+    height: 25px !important;
+    width: 1px !important;
+}
+#tableDates th {
+    max-height: 30px;
+}
+
+.subjectsContainer table tbody tr:not(:first-child){ /* subject table tr*/
+    height: var(--subsH) !important;
 }
 .subjectsContainer table tbody tr:last-child{ /* subject table tr*/
     border-bottom: solid thin black !important;
@@ -119,9 +157,23 @@
 .subjectsContainer table tbody tr td{  /* subject table td*/
     position: absolute;
     z-index: 2;
-    top: 50%;
-    transform: translateY(-25%);
+    transform: translateY(-50%);
     max-height: 30px;
+}
+.overlapper{  /* subject table td that overlaps*/
+    position: relative;
+    background-color: rgba(255, 0, 0, 0.3);
+    height: 100%;
+    width: 0px !important;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+}
+.overlapper td{
+    position: relative !important;
+    background-color: blue !important;
+    height: auto !important;
+    max-height: unset;
 }
 .subjectsContainer table tbody th{
     align-content: center;
@@ -147,7 +199,7 @@
     margin-left: calc(inherit*-1);
 }
 .subjPreview table {
-    height: 100%; /*TODO: Fix subjects height to view count instead of 100% and add support for vertical scroll */
+    height: fit-content; /*TODO: Fix subjects height to view count instead of 100% and add support for vertical scroll */
     margin: 0 !important;
     padding: 0 !important;
 }
@@ -158,6 +210,12 @@
 .subjPreview table tbody tr{ /* subject preview table tr*/
     border: solid thin black !important;
     border-bottom: none !important;
+}
+.subjPreview table tbody tr:first{
+    height: 1rem;
+}
+.subjPreview table tbody tr:not(:first-child){
+    height: var(--subsH) !important;
 }
 .subjPreview table tbody th {
     align-content: center;
@@ -197,13 +255,13 @@
 .contentContainer{
     flex-wrap: nowrap !important;
     overflow-x: scroll;
-    height: 100%;
+    overflow-y: clip !important;
+    height: fit-content;
 }
 
 .pageContainer{
     position: relative;
     /* overflow-x: scroll !important; */
-    overflow-y: scroll !important;
     padding: 0 !important;
     margin: 0 !important;
     height: 20rem;
