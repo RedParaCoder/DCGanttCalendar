@@ -1,2 +1,0 @@
-C:\repos\DC Gantt Calendar\obj\Release\DC Gantt Calendar.pcfproj.AssemblyReference.cache
-C:\repos\DC Gantt Calendar\obj\Release\DC Gantt Calendar.pcfproj.CoreCompileInputs.cache

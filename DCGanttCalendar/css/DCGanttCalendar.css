@@ -1,352 +1,274 @@
-:root{
-    --cellW: 150px;
-    --subsH: 59px;
-    --thH: 236px
-}
-.calendarDate{
-    box-sizing: border-box;
-    max-width: calc(var(--cellW) - 1px) !important;
-    min-width: calc(var(--cellW) - 1px) !important;
-    height: 1rem;
-}
-.calendarDate:first-child{
-    box-sizing: border-box;
-    max-width: var(--cellW) !important;
-    min-width: var(--cellW) !important;
-}
-.calendarDate:last-child{
-    box-sizing: border-box;
-    max-width: var(--cellW) !important;
-    min-width: var(--cellW) !important;
-}
-.calendarDate *{
-    box-sizing: border-box;
-}
-/* noscrollbars for contentContainer */
-.contentContainer::-webkit-scrollbar{
-    display: none;
-}
-.contentContainer::-webkit-scrollbar-track{
-    display: none;
-}
-.contentContainer::-webkit-scrollbar-thumb{
-    display: none;
-}
-.contentContainer::-webkit-scrollbar-thumb:hover{
-    display: none;
-}
-
-
-
-.tableContainer, .tableContainer * {
-    box-sizing: content-box;
-}
-.tableContainer{ /* timeline table container*/
-    overflow: visible !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-.tableContainer table thead tr th {
-    text-align: center;
-}
-.tableContainer table thead tr th:last-child{
-    border-right: none !important;
-}
-.tableContainer table tbody tr td{
-    height: 100%;
-    box-sizing: content-box;
-}
-.tableContainer table tbody tr td:last-child{
-    border-right: none !important;
-}
-.today{
-    background-color: red;
-}
-.today-blink {
-    transition: background-color 2s ease-out;
-    background-color: transparent;
-    
-}
-.scopeCenter::-webkit-scrollbar, .timelineContainer::-webkit-scrollbar{
+.mainBody::-webkit-scrollbar{
     width: 0.5rem;
     height: 0.5rem;
-    border: none;
-    background: transparent;
-    
+    background: #4d5154;
+    box-shadow: 0px 0px 0.3rem 0.1rem rgba(0,0,0,0.8) inset;
+
 }
-.scopeCenter::-webkit-scrollbar-track, .timelineContainer::-webkit-scrollbar-track{
+.mainBody::-webkit-scrollbar-track{
     background: transparent;
-    border: solid thin black;
+    border: solid thin transparent;
     border-bottom: none;
 }
-.scopeCenter::-webkit-scrollbar-thumb, .timelineContainer::-webkit-scrollbar-thumb{
+.mainBody::-webkit-scrollbar-thumb{
     resize: vertical !important;
-    background: #555;
+    background: #212529;
     border-radius: 1rem;
     border-top-right-radius: 0;
     border-bottom-left-radius: 0;
-    border: solid thin black;
+    border: solid thin rgba(255,255,255,0.3);
 }
-.scopeCenter::-webkit-scrollbar-thumb:hover, .timelineContainer::-webkit-scrollbar-thumb:hover{
-    background: #725e5e;
+.mainBody::-webkit-scrollbar-thumb:hover{
+    background: #373b3e;
     border: solid thin black
 }
 
-.timelineContainer{ /*container for subjects placeholder and calendar */
-    /* overflow: hidden; */
-    height: calc(100% - 35px);
-    padding: 0 !important;
-    margin: 0 !important;
-    display: flex;
-    overflow-y: scroll !important;
+.mainBody {
+    background: red;
+    width: 969px;
+    height: 365px;
+    overflow-y: scroll;
+    overflow-x: hidden; /* Set this to hidden */
+}
+.mainBody{
+    transition: grid 300ms;
+    display: grid; 
+    grid-template-columns: 7.8rem auto; 
+    grid-template-rows: 2.5rem auto 2.5rem; 
+    gap: 0px 0px; 
+    grid-template-areas: 
+    "Properties Dates"
+    "Subjects Assignments"
+    "Scope Scope"; 
+}
+.mainBody:has(#asgn-7:hover){
+    grid-template-columns: 0px auto;
+}
+.mainBody:has(#asgn-7:hover) .dcProperties{
+    transform: translateX(-7.8rem);
+}
+.mainBody.mainBody:has(#asgn-7:hover) .subjectDisplay{
+    transform: translateX(-7.8rem);
 }
 
-.contentContainer thead tr th{ /* timeline table */
-    border: solid thin black !important;
-    padding: 0 !important;
-    white-space: nowrap;
-    overflow-x: hidden;
-}
 
-
-
-#table-body-row td{
-    border-bottom: none !important;
-}
-#table-head-row th:first-child, #table-body-row td:first-child{
-    border-left: none !important;
-}
-
-
-.subjectsContainer{
-    position: sticky;
-    width: auto !important;
-}
-.subjectsContainer table{ /* subject table tr*/
-    height: 100%;
-    margin: 0 !important;
-    padding: 0 !important;
-    margin-left: -2px !important;
-}
-.subjectsContainer table tbody{
-    position: sticky;
-    left: 0;
-}
-.assignmentP{
-    transform: translateY(-100%);
-}
-.subjectsContainer table tbody tr{ /* subject table tr*/
-    border: solid thin black !important;
-    border-bottom: none !important;
-}
-#tableDates{
-    position: relative;
-    height: 25px !important;
-    width: 1px !important;
-}
-#tableDates th {
-    max-height: 30px;
-}
-
-.subjectsContainer table tbody tr:not(:first-child){ /* subject table tr*/
-    height: var(--subsH) !important;
-}
-.subjectsContainer table tbody tr:last-child{ /* subject table tr*/
-    border-bottom: solid thin black !important;
-}
-.subjectsContainer table tbody tr td{  /* subject table td*/
-    position: absolute;
-    z-index: 2;
-    transform: translateY(-50%);
-    max-height: 30px;
-}
-.overlapper{  /* subject table td that overlaps*/
-    position: relative;
-    background-color: rgba(255, 0, 0, 0.3);
-    height: 100%;
-    width: 0px !important;
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: column;
-}
-.overlapper td{
-    position: relative !important;
-    background-color: blue !important;
-    height: auto !important;
-    max-height: unset;
-}
-.subjectsContainer table tbody th{
-    align-content: center;
-    padding: 0 !important;
-    z-index: 2;
-    max-height: 1rem;
-    display: none !important;
-}
-.subjectsContainer table tbody td p{
-    margin: 0 !important;
-    position: sticky;
-    width: fit-content;
-    right: 0;
-}
-.subjPreview { /* Subjects Preview */
-    position: relative;
-    padding: 0 !important;
-    width: fit-content !important;
-    transition: 0.5s;
-
-}
-.subjPreview-exit {
-    margin-left: calc(inherit*-1);
-}
-.subjPreview table {
-    height: fit-content; /*TODO: Fix subjects height to view count instead of 100% and add support for vertical scroll */
-    margin: 0 !important;
-    padding: 0 !important;
-}
-.subjPreview table tbody {
-    position: sticky;
-    left: 0;
-}
-.subjPreview table tbody tr{ /* subject preview table tr*/
-    border: solid thin black !important;
-    border-bottom: none !important;
-}
-.subjPreview table tbody tr:first{
-    height: 1rem;
-}
-.subjPreview table tbody tr:not(:first-child){
-    height: var(--subsH) !important;
-}
-.subjPreview table tbody th {
-    align-content: center;
-    padding: 0 !important;
-    z-index: 2;
-    max-height: 1rem;
-}
-.subjPreview table tbody td p{
-    margin: 0 !important;
-    position: sticky;
-    width: fit-content;
-    right: 0;
-}
-.sPreviewToggle { /* subject preview button */
-    position: absolute;
-    top: .3rem;
-    width: 1rem;
-    height: 1rem;
-    right: -25%;
-    border-radius: 100%;
-    box-shadow: 0 0 0 .25em rgb(90, 90, 90) inset;
-    transform: translateX(-60%);
-    background-color: white;
-    border: solid thin black;
-    cursor: pointer;
-    z-index: 5;
-    transition: 0.5s;
-}
-.sPreviewToggle:hover{
-    box-shadow: 0 0 0 .25em rgb(110, 110, 110) inset;
-}
-.contentContainer, .subjectsContainer{
-    padding: 0 !important;
-    margin: 0 !important;
-    height: 20rem;
-}
-.contentContainer{
-    flex-wrap: nowrap !important;
-    overflow-x: scroll;
-    overflow-y: clip !important;
-    height: fit-content;
-}
-
-.pageContainer{
-    position: relative;
-    /* overflow-x: scroll !important; */
-    padding: 0 !important;
-    margin: 0 !important;
-    height: 20rem;
-    
-
-}
-.timelineScope{
-    position: sticky !important;
-    background: #6c757d;
-    left: 0;
-    right: 0;
-    bottom: 0 !important;
-    height: 35px;
-    border: solid thin black;
+.dcProperties{
     overflow: hidden;
-    z-index: 3;
+    background: magenta;
+    transition: 350ms ease-out;
+    grid-area: 1 / 1 / 2 / 2;
+    grid-area: Properties;
+    position: sticky;
+    top: 0;
+    left: 0;
+    margin-left: 0;
+    z-index: 6;
+    width: 100%;
+}
+.dcProperties table{
+    position: absolute;
+    margin: 0;
+}
+
+.dateDisplay {
+    background: cyan;
+    position: sticky;
+    top: 0px;
+    z-index: 1;
+    height: fit-content;
+    grid-area: 1 / 2 / 2 / 3;
+    grid-area: Dates;
+}
+.dateDisplay table thead tr th, .asgnContainer table tbody tr td{
+    text-align: center;
+    text-wrap: nowrap;
+    text-anchor: middle;
+}
+
+.dateTable {
+    margin-bottom: 0px !important;
+}
+table.dateTable thead tr th:first-child{ /* dateElement */
+    text-align: center;
+    display: block !important;
+    /* border: solid thin magenta; */
+}
+
+.subjectDisplay {
+    transition: 300ms;
+    background: blue;
+    width: 100%;
+    position: sticky;
+    left: 0;
+    margin-left: 0;
+    z-index: 4;
+    grid-area: 2 / 1 / 3 / 2;
+    grid-area: Subjects;
+}
+.subjectDisplay table tbody tr::-webkit-scrollbar{
+    display: none;
+}
+.subjectDisplay table tbody tr{
+    position: relative;
+    text-align: center;
+    display: block;
+    resize: vertical;
+    overflow: auto;
+    min-height: 2.25rem;
+    transition: 1s border;
+}
+.subjectDisplay table tbody tr td{
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+.subjectDisplay table tbody tr:hover::-webkit-resizer{
+    color: rgba(255, 255, 255, 1);
+}
+.subjectDisplay table tbody tr::-webkit-resizer{
+    color: rgba(0, 0, 0, 0);
+    transition: all 1s;
+    background: conic-gradient(
+        transparent 60deg, currentColor 60deg,
+        currentColor 120deg, transparent 120deg,
+        transparent 240deg, currentColor 240deg,
+        currentColor 300deg, transparent 300deg
+      ) 10% / 70% 50% no-repeat;
+      transition: 1s;
+}
+
+.subjTable {
+    transform: 300ms;
+    margin-left: 0%;
+    text-align: center;
+    margin-bottom: 0px !important;
+}
+.subjTable tbody tr td:not(:first){
+    clear: both;
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap !important;
+}
+
+.asgnContainer{
+    justify-self: start;
+    width: fit-content;
+    height: 100%;
+    background: pink;
+    position: absolute;
+    display: block;
+    grid-area: 2 / 2 / 3 / 3;
+    grid-area: Assignments;
+}
+.asgnContainer table.subjTable tbody tr.subject {
+    /* Height handled by javascript */
+    display: block;
+    width: 0px !important;
+    padding: 0px !important;
+    color: transparent;
+    overflow: visible;
+    position: relative;
 
 }
-.scopeCenter{
-    display: inline-flex;
+.asgnContainer table.subjTable tbody tr.subject td{
     position: absolute;
-    overflow-x: scroll;
-    overflow-y: hidden;
-    height: inherit;
-    left: 6rem;
-    right: 6rem;
-    margin-top: -1px;
-    padding-top: 1px;
-}
-.scopeCenter div{
-    border-right: solid thin rgba(0, 0, 0, 0.40);
-    border-left: solid thin rgba(0, 0, 0, 0.40);
-    min-width: .5rem;
-}
-.scopeCenter div table{
-    height: fit-content;
-}
-.scopeCenter div table tbody{
-    height: fit-content;
-}
-.scopeAssignment{
-    /* padding: 0 !important; */
-    position: absolute;
-    border: solid thin rgba(255, 255, 255, 0.7);
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 2;
-    height: inherit;
-}
-.scopeLeft, .scopeRight{
     display: block;
+    height: 100%;
+}
+.asgnContainer table.subjTable tbody tr.subject div.asgnWrapper{
+    display: flex;
+    align-items: flex-start;
     position: absolute;
-    height: inherit;
-    width: fit-content;
+    flex-direction: column;
+    flex-wrap: wrap;
+    padding: 0px !important;
+    overflow: visible;
+    width: 0px;
+    justify-content: unset;
+    height: 100%;
+    background: transparent;
+    min-height: 0;
 }
-.scopeLeft{
+.asgnContainer table.subjTable tbody tr.subject div.asgnWrapper td{
+    background: purple;
+    display: block;
+    position: relative;
+    height: auto;
+    box-sizing: border-box;
+    min-height: 0;
+    overflow: hidden;
+    align-self: stretch;
+    word-wrap: break-word;
+    flex: 1 1 0%;
+}
+.asgnContainer table.subjTable tbody tr.subject div.asgnWrapper div.peace{
+    display: block;
+    position: relative;
+    height: auto;
+    box-sizing: border-box;
+    min-height: 0;
+    align-self: stretch;
+    word-wrap: break-word;
+    flex: 1 1 0%;
+    overflow: visible clip;
+}
+.asgnContainer table.subjTable tbody tr.subject div.asgnWrapper div.peace td{
+    position: absolute;
+    height: 100%;
+}
+.assignment p{
+    margin: 0;
+}
+.subject .assignment{
+    font-size: 1rem;
+    vertical-align: middle;
+    max-height: 2.56rem;
+    container-type: size;
+    container-name: asgnElm;
+}
+@container asgnElm (min-height: 0px){
+    .assignment p{
+        font-size: min(80cqh, 1rem);
+    }
+}
+
+.scope{
+    z-index: 9;
+    position: sticky;
+    bottom: 0;
     left: 0;
+    grid-area: 2 / 1 / 3 / 3;
+    grid-area: Scope;
+    background: rgba(150,75,75,0.8);
+    height: 2.5rem;
+    display: grid;
+    grid-template-rows: 2.6rem;
+    grid-template-columns: 7.8rem auto 7.8rem;
+    gap: 0px 0px;
+    grid-template-areas: "navLeft scopeMain navRight";
+}
+.scopeUI{
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     
+
 }
-.scopeRight{
-    right: 0;
-    
+.navLeft, .navRight, .scopeElements{
+    overflow: hidden;
 }
-.scopeLeft button, .scopeRight button{
-    height: inherit;
-    width: 2rem;
-    
+.navLeft{
+    display: flex;
+    background: rgba(255,75,75,0.8);
+    grid-area: navLeft;
 }
-.scopeLeft button{
-    border-left: solid thin gray;
+.navRight{
+    display: flex;
+    background: rgba(255,155,155,0.8);
+    grid-area: navRight;
 }
-.scopeRight button{
-    border-right: solid thin gray;
-}
-.scopeLeft button p{
-    font-weight: bold;
-    font-size: x-large;
-    transform: translate(5%, -32%);
-    margin-left: -0.45rem !important;
-}
-.scopeRight button p{
-    font-weight: bold;
-    font-size: x-large;
-    transform: translate(5%, -30%);
-    margin-left: -0.15rem;
-}
-.scopeRight #algRight p{
-    margin-left: -0.6rem !important;
+.scopeMain{
+    background: rgba(255,185,185,0.8);
+    grid-area: scopeMain;
 }
